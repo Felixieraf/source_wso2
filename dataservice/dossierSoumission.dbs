@@ -2216,4 +2216,48 @@ FROM   T where "idStatut"=4 or "idStatut"=3 ;
     <param type="IN" name="value" sqlType="DOUBLE" paramType="SCALAR" optional="false" />
     <param type="IN" name="idOwner" sqlType="INTEGER" paramType="SCALAR" optional="false" />
   </query>
+  
+  
+  <query id="addArchive" useConfig="dossierSomissionDS">
+    <sql>INSERT INTO public.archive("idDossier","fileName", "path") VALUES (:idDossier, :fileName, :path);
+	</sql>
+    <param type="IN" name="path" paramType="SCALAR" sqlType="STRING" optional="false" />
+    <param type="IN" name="fileName" paramType="SCALAR" sqlType="STRING" optional="false" />
+    <param type="IN" name="idDossier" paramType="SCALAR" sqlType="INTEGER" optional="false" />
+    <result outputType="json">
+	    {
+	    	"archives":{
+		 		"fileName":"$fileName",
+				"idDossier":"$idDossier",
+				"path":"$path"
+			}
+		}
+	</result>
+  </query>
+  <query id="getArchive" useConfig="dossierSomissionDS">
+    <sql>SELECT * FROM public.archive 		</sql>
+    <param type="IN" name="path" paramType="SCALAR" sqlType="STRING" optional="false" />
+    <param type="IN" name="fileName" paramType="SCALAR" sqlType="STRING" optional="false" />
+    <param type="IN" name="idDossier" paramType="SCALAR" sqlType="INTEGER" optional="false" />
+    <result outputType="json">
+    	{
+    		"archives":{ 
+				"idDossier":"$idDossier",
+				"fileName":"$fileName",
+				"path":"$path"
+			}
+		}
+	</result>
+  </query>
+  <query id="deleteArchive" useConfig="dossierSomissionDS">
+    <sql> DELETE FROM public.archive WHERE "path"=:path</sql>
+    <param type="IN" name="path" paramType="SCALAR" sqlType="STRING" optional="false" />
+  </query>
+  <resource path="deleteArchive" method="DELETE">
+    <description />
+    <call-query href="deleteArchive">
+      <with-param name="path" query-param="path" />
+    </call-query>
+  </resource>
+  
 </data>
