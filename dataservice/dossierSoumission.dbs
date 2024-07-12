@@ -1608,10 +1608,10 @@ FROM   T where "idStatut"=4 or "idStatut"=3 ;
     </resource>
     <query id="fetchFolderAsc" useConfig="dossierSomissionDS">
         <sql>
-        	SELECT dossier.*, de.id AS stateId, de.person_uuid AS statePersonUid, de.group AS stateGroup, de."createdAt" AS stateCreatedAt
+            ELECT dossier.*, de.id AS stateId, de.person_uuid AS statePersonUid, de.group AS stateGroup, de."createdAt" AS stateCreatedAt
             FROM dossier 
             LEFT JOIN public.dossier_etat de ON dossier."idDossier" = de."idDossier" AND de.group = :group
-            WHERE dossier."idDossier" IN (:ids) AND "idStatutDossier" IN (:status)
+            WHERE "idStatutDossier" IN (:status)
             ORDER BY 
             	CASE WHEN "idStatutDossier" = 2 THEN "updated_at" END DESC NULLS LAST,
 				CASE WHEN "idStatutDossier" != 2 THEN "dateSoumission" END ASC,

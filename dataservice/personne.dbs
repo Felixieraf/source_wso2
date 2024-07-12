@@ -1,12 +1,12 @@
 <data transports="http https" serviceGroup="mg.gov.edbm.societe.personneDS" serviceNamespace="" name="personne">
 	<description />
 	<!-- CONFIGURATION PROD -->
-<!-- 	<config id="personneDS"> -->
-<!-- 	<property name="driverClassName">org.postgresql.Driver</property> -->
-<!-- 	<property name="url">jdbc:postgresql://devedbmdb.cq07jvdma2am.af-south-1.rds.amazonaws.com:5432/personne</property> -->
-<!-- 	<property name="username">devedbmdb</property> -->
-<!-- 	<property name="password">devedbmdb</property> -->
-<!-- 	</config> -->
+ 	<!-- <config id="personneDS"> 
+		<property name="driverClassName">org.postgresql.Driver</property>
+		<property name="url">jdbc:postgresql://devedbmdb.cq07jvdma2am.af-south-1.rds.amazonaws.com:5432/personne</property>
+		<property name="username">devedbmdb</property>
+		<property name="password">devedbmdb</property>
+	</config> -->
 	<!-- CONFIGURATION TEST -->
 	<config id="personneDS">
 		<property name="driverClassName">org.postgresql.Driver</property>
@@ -14,12 +14,12 @@
 		<property name="username">devedbmdb</property>
 		<property name="password">devedbmdb</property>
 	</config>
-<!-- 	<config id="personneDS"> -->
-<!-- 		<property name="driverClassName">org.postgresql.Driver</property> -->
-<!-- 		<property name="url">jdbc:postgresql://localhost:5432/personne</property> -->
-<!-- 		<property name="username">postgres</property> -->
-<!-- 		<property name="password">postgres</property> -->
-<!-- 	</config> -->
+    <!-- <config id="personneDS"> 
+		<property name="driverClassName">org.postgresql.Driver</property>
+		<property name="url">jdbc:postgresql://localhost:5432/personne</property>
+		<property name="username">postgres</property>
+		<property name="password">postgres</property>
+	</config> -->
 	<resource method="POST" path="addPersonCompany">
 		<description />
 		<call-query href="addPersonCompany">
@@ -788,21 +788,21 @@
 	<query id="getPersonById" useConfig="personneDS">
 		<sql>SELECT "idPersonne", nom, prenom, "nomPere", "nomMere",
 			"dateNaissance", "lieuNaissance", "situationMatrimonial",
-			"pieceIdentite", sexe, societe_mandataire, e_mail, "idUtilisateur",
+			"idPieceIdentite", sexe, societe_mandataire, e_mail, "idUtilisateur",
 			tel,tel2, idrole, idadresse,nationalite
 			FROM public.personne WHERE "idPersonne"=:idPersonne
 		</sql>
 		<param type="IN" name="idPersonne" sqlType="INTEGER"
 			paramType="SCALAR" />
 		<result outputType="json">
-			{"personnes":{"personne":{"idPersonne":$idPersonne, "nom":"$nom",
+			{"personne":{"idPersonne":$idPersonne, "nom":"$nom",
 			"prenom":"$prenom", "nomPere":"$nomPere", "nomMere":"$nomMere",
 			"dateNaissance":"$dateNaissance", "lieuNaissance":"$lieuNaissance",
 			"situationMatrimonial":"$situationMatrimonial",
-			"pieceIdentite":"$pieceIdentite", "sexe":"$sexe",
+			"pieceIdentite":"$idPieceIdentite", "sexe":"$sexe",
 			"societe_mandataire":"$societe_mandataire", "e_mail":"$e_mail",
 			"idUtilisateur":"$idUtilisateur", "tel":$tel, "idrole":"$idrole",
-			"idadresse":"$idadresse","tel2":$tel2,"nationalite":"$nationalite"}}}
+			"idadresse":"$idadresse","tel2":$tel2,"nationalite":"$nationalite"}}
 		</result>
 	</query>
 	<query id="getPersonByEmail" useConfig="personneDS">
@@ -1687,8 +1687,60 @@
 	</query>
 	<!-- #USER MANAGEMENT -->
 
-
-	<!-- RCS INTEGRATOR -->
+	<!-- FILTER -->
+	<resource method="POST" path="users/filter/ids/by/name">
+		<description />
+		<call-query href="usersIdsByName">
+			<with-param name="name" query-param="name" />
+		</call-query>
+	</resource>
+	<query id="usersIdsByName" useConfig="personneDS">
+		<sql>
+			WITH
+    			name AS (VALUES (:name))
+    		
+    		SELECT "idPersonne" FROM public."personne"
+    		WHERE matricule IS NULL AND (LOWER(TRIM(nom)) LIKE CONCAT('%',(SELECT * FROM name),'%') OR LOWER(TRIM(prenom)) LIKE CONCAT('%',(SELECT * FROM name),'%'))
+		</sql>
+		<param type="IN" name="name" optional="false" sqlType="STRING" paramType="SCALAR" />
+		<result outputType="json">
+			{
+				"data": {
+					"persons": [{
+						"idPersonne": $idPersonne
+					}]
+				}
+			}
+		</result>
+	</query>
+	<!-- #FILTER -->
+	
+	<!-- ROLE -->
+	<resource method="POST" path="roles/fetchByIds">
+		<description />
+		<call-query href="fetchRolesByIds">
+			<with-param name="ids" query-param="ids" />
+		</call-query>
+	</resource>
+	<query id="fetchRolesByIds" useConfig="personneDS">
+		<sql>
+			SELECT * FROM role WHERE id_role IN (:ids)
+		</sql>
+		<param type="IN" name="ids" optional="false" sqlType="INTEGER" paramType="ARRAY" />
+		<result outputType="json">
+			{
+				"data": {
+					"roles": [{
+						"id": $id_role,
+						"name": "$libelle_role"
+					}]
+				}
+			}
+		</result>
+	</query>
+	<!-- #ROLE -->
+	
+	<!-- PERSON -->
 	<resource method="POST" path="physical-associates">
 		<description />
 		<call-query href="fetchPhysicalAssociatesInList">
@@ -1710,43 +1762,99 @@
 			paramType="ARRAY" />
 		<result outputType="json">
 			{
-			"data": {
-			"associates": [{
-			"id":$idPersonne,
-			"nom": "$nom",
-			"prenom": "$prenom",
-			"nomPere": "$nomPere",
-			"nomMere": "$nomMere",
-			"dateNaissance": "$dateNaissance",
-			"lieuNaissance": "$lieuNaissance",
-			"sexe": $sexe,
-			"tel": "$tel",
-			"tel2": "$tel2",
-			"email":"$e_mail",
-			"idAdresse": $idAdresse,
-			"identite": {
-			"id": $id,
-			"number": "$numeroPiece",
-			"deliveryPlace": "$lieuDelivrancePiece",
-			"type": {
-			"id": $idTypePiece,
-			"name": "$nomTypePiece"
-			}
-			},
-			"nationalite":{
-			"code": "$code",
-			"libelle": "$libelle"
-			},
-			"situationMatrimonial": {
-			"id": $idSituationMatrimonial,
-			"name": "$libelleSituationMatrimonial"
-			}
-			}]
-			}
+				"data": {
+					"associates": [{
+						"id":$idPersonne,
+						"nom": "$nom",
+						"prenom": "$prenom",
+						"nomPere": "$nomPere",
+						"nomMere": "$nomMere",
+						"dateNaissance": "$dateNaissance",
+						"lieuNaissance": "$lieuNaissance",
+						"sexe": $sexe,
+						"tel": "$tel",
+						"tel2": "$tel2",
+						"email":"$e_mail",
+						"idAdresse": $idAdresse,
+						"identite": {
+							"id": $id,
+							"number": "$numeroPiece",
+							"deliveryPlace": "$lieuDelivrancePiece",
+							"type": {
+								"id": $idTypePiece,
+								"name": "$nomTypePiece"
+							}
+						},
+						"nationalite":{
+							"code": "$code",
+							"libelle": "$libelle"
+						},
+						"situationMatrimonial": {
+							"id": $idSituationMatrimonial,
+							"name": "$libelleSituationMatrimonial"
+						}
+					}]
+				}
 			}
 		</result>
 	</query>
-
+	<resource method="GET" path="physical-associates/persons/{id}">
+		<description />
+		<call-query href="fetchPersonDetail">
+			<with-param name="id" query-param="id" />
+		</call-query>
+	</resource>
+	<query id="fetchPersonDetail" useConfig="personneDS">
+		<sql>
+			SELECT personne.*, pi.*, tpi.*, nationalite.*, sm.*
+			FROM personne
+			LEFT JOIN "pieceIdentite" pi ON pi.id = personne."idPieceIdentite"
+			LEFT JOIN "typePieceIdentite" tpi ON tpi."idTypePiece" = pi."idTypePiece"
+			LEFT JOIN nationalite ON nationalite.code = personne.nationalite
+			LEFT JOIN "situationMatrimoniale" sm ON sm."idSituationMatrimonial" =
+			personne."situationMatrimonial"
+			WHERE personne."idPersonne" = :id
+		</sql>
+		<param type="IN" name="id" optional="false" sqlType="INTEGER" paramType="SCALAR" />
+		<result outputType="json">
+			{
+				"personPhysical": {
+					"id":$idPersonne,
+					"nom": "$nom",
+					"prenom": "$prenom",
+					"nomPere": "$nomPere",
+					"nomMere": "$nomMere",
+					"dateNaissance": "$dateNaissance",
+					"lieuNaissance": "$lieuNaissance",
+					"sexe": $sexe,
+					"tel": "$tel",
+					"tel2": "$tel2",
+					"email":"$e_mail",
+					"idAdresse": $idAdresse,
+					"identite": {
+						"id": $id,
+						"number": "$numeroPiece",
+						"deliveryPlace": "$lieuDelivrancePiece",
+						"type": {
+							"id": $idTypePiece,
+							"name": "$nomTypePiece"
+						}
+					},
+					"nationalite":{
+						"code": "$code",
+						"libelle": "$libelle"
+					},
+					"situationMatrimonial": {
+						"id": $idSituationMatrimonial,
+						"name": "$libelleSituationMatrimonial"
+					}
+				}
+			}
+		</result>
+	</query>
+	<!-- #PERSON -->
+	
+	<!-- MORAL -->
 	<resource method="POST" path="moral-associates">
 		<description />
 		<call-query href="fetchMoralAssociatesInList">
@@ -1780,33 +1888,36 @@
 			}
 		</result>
 	</query>
-	<!-- #RCS INTEGRATOR -->
-
-	<!-- FILTER -->
-	<resource method="POST" path="users/filter/ids/by/name">
+	<resource method="GET" path="moral-associates/morales/{id}">
 		<description />
-		<call-query href="usersIdsByName">
-			<with-param name="name" query-param="name" />
+		<call-query href="fetchMoralDetail">
+			<with-param name="id" query-param="id" />
 		</call-query>
 	</resource>
-	<query id="usersIdsByName" useConfig="personneDS">
+	<query id="fetchMoralDetail" useConfig="personneDS">
 		<sql>
-			WITH
-    			name AS (VALUES (:name))
-    		
-    		SELECT "idPersonne" FROM public."personne"
-    		WHERE matricule IS NULL AND (LOWER(TRIM(nom)) LIKE CONCAT((table name),'%') OR LOWER(TRIM(prenom)) LIKE CONCAT((table name),'%'))
+			SELECT *
+			FROM "personneMorale" moral
+			WHERE "idPersonneMorale" = :id
 		</sql>
-		<param type="IN" name="name" optional="false" sqlType="STRING" paramType="SCALAR" />
+		<param type="IN" name="id" optional="false" sqlType="INTEGER"
+			paramType="SCALAR" />
 		<result outputType="json">
 			{
-				"data": {
-					"persons": [{
-						"idPersonne": $idPersonne
-					}]
+				"moral": {
+					"id":$idPersonneMorale,
+					"rcs": "$RCS",
+					"kbis": "$KBIS",
+					"nif": "$NIF",
+					"stat": "$STAT",
+					"qualite": "$qualite",
+					"capital": "$capitalSocial",
+					"name": "$denominationSocial",
+					"addressId": $idAdresse,
+					"legalStatusId": $idFormeJuridique
 				}
 			}
 		</result>
 	</query>
-	<!-- #FILTER -->
+	<!-- #MORAL -->
 </data>
