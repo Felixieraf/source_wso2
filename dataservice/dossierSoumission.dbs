@@ -1468,11 +1468,14 @@ FROM   T where "idStatut"=4 or "idStatut"=3 ;
     </resource>
     <query id="fetchFolderInListAsc" useConfig="dossierSomissionDS">
         <sql>
-            SELECT dossier.*, de.id AS stateId, de.person_uuid AS statePersonUid, de.group AS stateGroup, de."createdAt" AS stateCreatedAt
+        	SELECT dossier.*, de.id AS stateId, de.person_uuid AS statePersonUid, de.group AS stateGroup, de."createdAt" AS stateCreatedAt
             FROM dossier 
             LEFT JOIN public.dossier_etat de ON dossier."idDossier" = de."idDossier" AND de.group = :group
             WHERE dossier."idDossier" IN (:ids) AND "idStatutDossier" IN (:status)
-            ORDER BY "dateSoumission" ASC LIMIT :limit OFFSET :offset
+            ORDER BY 
+            	CASE WHEN "idStatutDossier" = 2 THEN "updated_at" END DESC NULLS LAST,
+				CASE WHEN "idStatutDossier" != 2 THEN "dateSoumission" END ASC,
+    			"numeroDossier" ASC NULLS LAST LIMIT :limit OFFSET :offset
         </sql>
         <param type="IN" name="ids" paramType="ARRAY" sqlType="INTEGER" />
         <param type="IN" name="status" paramType="ARRAY" sqlType="INTEGER" />
@@ -1525,11 +1528,14 @@ FROM   T where "idStatut"=4 or "idStatut"=3 ;
     </resource>
     <query id="fetchFolderInListDesc" useConfig="dossierSomissionDS">
         <sql>
-            SELECT dossier.*, de.id AS stateId, de.person_uuid AS statePersonUid, de.group AS stateGroup, de."createdAt" AS stateCreatedAt
+        	SELECT dossier.*, de.id AS stateId, de.person_uuid AS statePersonUid, de.group AS stateGroup, de."createdAt" AS stateCreatedAt
             FROM dossier 
             LEFT JOIN public.dossier_etat de ON dossier."idDossier" = de."idDossier" AND de.group = :group
             WHERE dossier."idDossier" IN (:ids) AND "idStatutDossier" IN (:status)
-            ORDER BY "dateSoumission" DESC LIMIT :limit OFFSET :offset
+            ORDER BY 
+            	CASE WHEN "idStatutDossier" = 2 THEN "updated_at" END DESC NULLS LAST,
+				CASE WHEN "idStatutDossier" != 2 THEN "dateSoumission" END ASC,
+    			"numeroDossier" ASC NULLS LAST LIMIT :limit OFFSET :offset
         </sql>
         <param type="IN" name="ids" paramType="ARRAY" sqlType="INTEGER" />
         <param type="IN" name="status" paramType="ARRAY" sqlType="INTEGER" />
@@ -1602,11 +1608,14 @@ FROM   T where "idStatut"=4 or "idStatut"=3 ;
     </resource>
     <query id="fetchFolderAsc" useConfig="dossierSomissionDS">
         <sql>
-            SELECT dossier.*, de.id AS stateId, de.person_uuid AS statePersonUid, de.group AS stateGroup, de."createdAt" AS stateCreatedAt
+        	SELECT dossier.*, de.id AS stateId, de.person_uuid AS statePersonUid, de.group AS stateGroup, de."createdAt" AS stateCreatedAt
             FROM dossier 
             LEFT JOIN public.dossier_etat de ON dossier."idDossier" = de."idDossier" AND de.group = :group
-            WHERE "idStatutDossier" IN (:status)
-            ORDER BY "dateSoumission" NULLS LAST LIMIT :limit OFFSET :offset
+            WHERE dossier."idDossier" IN (:ids) AND "idStatutDossier" IN (:status)
+            ORDER BY 
+            	CASE WHEN "idStatutDossier" = 2 THEN "updated_at" END DESC NULLS LAST,
+				CASE WHEN "idStatutDossier" != 2 THEN "dateSoumission" END ASC,
+    			"numeroDossier" ASC NULLS LAST LIMIT :limit OFFSET :offset
         </sql>
         <param type="IN" name="status" paramType="ARRAY" sqlType="INTEGER" />
         <param type="IN" name="limit" paramType="SCALAR" sqlType="INTEGER" />
