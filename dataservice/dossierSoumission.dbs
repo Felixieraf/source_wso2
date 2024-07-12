@@ -1608,7 +1608,7 @@ FROM   T where "idStatut"=4 or "idStatut"=3 ;
     </resource>
     <query id="fetchFolderAsc" useConfig="dossierSomissionDS">
         <sql>
-            ELECT dossier.*, de.id AS stateId, de.person_uuid AS statePersonUid, de.group AS stateGroup, de."createdAt" AS stateCreatedAt
+            SELECT dossier.*, de.id AS stateId, de.person_uuid AS statePersonUid, de.group AS stateGroup, de."createdAt" AS stateCreatedAt
             FROM dossier 
             LEFT JOIN public.dossier_etat de ON dossier."idDossier" = de."idDossier" AND de.group = :group
             WHERE "idStatutDossier" IN (:status)
