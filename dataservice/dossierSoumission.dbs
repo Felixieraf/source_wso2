@@ -1473,8 +1473,8 @@ FROM   T where "idStatut"=4 or "idStatut"=3 ;
             LEFT JOIN public.dossier_etat de ON dossier."idDossier" = de."idDossier" AND de.group = :group
             WHERE dossier."idDossier" IN (:ids) AND "idStatutDossier" IN (:status)
             ORDER BY 
-            	CASE WHEN "idStatutDossier" = 2 THEN "updated_at" END DESC NULLS LAST,
-				CASE WHEN "idStatutDossier" != 2 THEN "dateSoumission" END ASC,
+            	CASE WHEN "idStatutDossier" = 4 THEN "updated_at" END DESC NULLS LAST,
+				CASE WHEN "idStatutDossier" != 4 THEN "dateSoumission" END ASC,
     			"numeroDossier" ASC NULLS LAST LIMIT :limit OFFSET :offset
         </sql>
         <param type="IN" name="ids" paramType="ARRAY" sqlType="INTEGER" />
@@ -1533,8 +1533,8 @@ FROM   T where "idStatut"=4 or "idStatut"=3 ;
             LEFT JOIN public.dossier_etat de ON dossier."idDossier" = de."idDossier" AND de.group = :group
             WHERE dossier."idDossier" IN (:ids) AND "idStatutDossier" IN (:status)
             ORDER BY 
-            	CASE WHEN "idStatutDossier" = 2 THEN "updated_at" END DESC NULLS LAST,
-				CASE WHEN "idStatutDossier" != 2 THEN "dateSoumission" END ASC,
+            	CASE WHEN "idStatutDossier" = 4 THEN "updated_at" END DESC NULLS LAST,
+				CASE WHEN "idStatutDossier" != 4 THEN "dateSoumission" END ASC,
     			"numeroDossier" ASC NULLS LAST LIMIT :limit OFFSET :offset
         </sql>
         <param type="IN" name="ids" paramType="ARRAY" sqlType="INTEGER" />
@@ -1613,8 +1613,8 @@ FROM   T where "idStatut"=4 or "idStatut"=3 ;
             LEFT JOIN public.dossier_etat de ON dossier."idDossier" = de."idDossier" AND de.group = :group
             WHERE "idStatutDossier" IN (:status)
             ORDER BY 
-            	CASE WHEN "idStatutDossier" = 2 THEN "updated_at" END DESC NULLS LAST,
-				CASE WHEN "idStatutDossier" != 2 THEN "dateSoumission" END ASC,
+            	CASE WHEN "idStatutDossier" = 4 THEN "updated_at" END DESC NULLS LAST,
+				CASE WHEN "idStatutDossier" != 4 THEN "dateSoumission" END ASC,
     			"numeroDossier" ASC NULLS LAST LIMIT :limit OFFSET :offset
         </sql>
         <param type="IN" name="status" paramType="ARRAY" sqlType="INTEGER" />
