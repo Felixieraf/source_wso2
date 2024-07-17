@@ -1,12 +1,12 @@
 <data transports="http https" serviceGroup="mg.gov.edbm.societe.dossierSoumissionDS" serviceNamespace="" name="dossierSoumission">
   <description />
   <!-- CONFIGURATION PROD -->
-<!--   <config id="dossierSomissionDS"> -->
-<!--     <property name="driverClassName">org.postgresql.Driver</property> -->
-<!--     <property name="url">jdbc:postgresql://devedbmdb.cq07jvdma2am.af-south-1.rds.amazonaws.com:5432/dossier_somission</property> -->
-<!--     <property name="username">devedbmdb</property> -->
-<!--     <property name="password">devedbmdb</property> -->
-<!--   </config>  -->
+   <!-- <config id="dossierSomissionDS">
+     <property name="driverClassName">org.postgresql.Driver</property>
+     <property name="url">jdbc:postgresql://devedbmdb.cq07jvdma2am.af-south-1.rds.amazonaws.com:5432/dossier_somission</property>
+     <property name="username">devedbmdb</property>
+     <property name="password">devedbmdb</property>
+   </config> -->
   <!-- CONFIGURATION TEST -->
    <config id="dossierSomissionDS">
     	<property name="driverClassName">org.postgresql.Driver</property>
@@ -15,12 +15,12 @@
 	    <property name="password">devedbmdb</property>
    	</config>
    	<!-- CONFIGURATION DEV -->
-<!--  <config id="dossierSomissionDS"> -->
-<!--     <property name="driverClassName">org.postgresql.Driver</property> -->
-<!--     <property name="url">jdbc:postgresql://localhost:5432/dossier_somission</property> -->
-<!--     <property name="username">postgres</property> -->
-<!--     <property name="password">postgres</property> -->
-<!--   </config> -->
+  <!-- <config id="dossierSomissionDS">
+     <property name="driverClassName">org.postgresql.Driver</property>
+     <property name="url">jdbc:postgresql://localhost:5432/dossier_somission</property>
+     <property name="username">postgres</property>
+     <property name="password">postgres</property>
+   </config> -->
 
   <query id="addNumeroDossier" useConfig="dossierSomissionDS">
     <sql>INSERT INTO public.dossier(
@@ -1473,7 +1473,7 @@ FROM   T where "idStatut"=4 or "idStatut"=3 ;
             LEFT JOIN public.dossier_etat de ON dossier."idDossier" = de."idDossier" AND de.group = :group
             WHERE dossier."idDossier" IN (:ids) AND "idStatutDossier" IN (:status)
             ORDER BY 
-            	CASE WHEN "idStatutDossier" = 4 THEN "updated_at" END DESC NULLS LAST,
+            	CASE WHEN "idStatutDossier" = 4 THEN "dateSoumission" END DESC NULLS LAST,
 				CASE WHEN "idStatutDossier" != 4 THEN "dateSoumission" END ASC,
     			"numeroDossier" ASC NULLS LAST LIMIT :limit OFFSET :offset
         </sql>
@@ -1533,7 +1533,7 @@ FROM   T where "idStatut"=4 or "idStatut"=3 ;
             LEFT JOIN public.dossier_etat de ON dossier."idDossier" = de."idDossier" AND de.group = :group
             WHERE dossier."idDossier" IN (:ids) AND "idStatutDossier" IN (:status)
             ORDER BY 
-            	CASE WHEN "idStatutDossier" = 4 THEN "updated_at" END DESC NULLS LAST,
+            	CASE WHEN "idStatutDossier" = 4 THEN "dateSoumission" END DESC NULLS LAST,
 				CASE WHEN "idStatutDossier" != 4 THEN "dateSoumission" END ASC,
     			"numeroDossier" ASC NULLS LAST LIMIT :limit OFFSET :offset
         </sql>
@@ -1613,7 +1613,7 @@ FROM   T where "idStatut"=4 or "idStatut"=3 ;
             LEFT JOIN public.dossier_etat de ON dossier."idDossier" = de."idDossier" AND de.group = :group
             WHERE "idStatutDossier" IN (:status)
             ORDER BY 
-            	CASE WHEN "idStatutDossier" = 4 THEN "updated_at" END DESC NULLS LAST,
+            	CASE WHEN "idStatutDossier" = 4 THEN "dateSoumission" END DESC NULLS LAST,
 				CASE WHEN "idStatutDossier" != 4 THEN "dateSoumission" END ASC,
     			"numeroDossier" ASC NULLS LAST LIMIT :limit OFFSET :offset
         </sql>
@@ -2135,4 +2135,101 @@ FROM   T where "idStatut"=4 or "idStatut"=3 ;
         <param type="IN" name="id" paramType="SCALAR" sqlType="INTEGER" />
     </query>
     <!-- #FODLER STATES -->
+    
+    
+    
+    <!-- ARCHIVE -->
+    <resource path="addArchive" method="POST">
+        <description />
+        <call-query href="addArchive">
+            <with-param name="folderId" query-param="folderId" />
+            <with-param name="fileName" query-param="fileName" />
+            <with-param name="path" query-param="path" />
+        </call-query>
+    </resource>
+    <query id="addArchive" useConfig="dossierSomissionDS">
+	    <sql>INSERT INTO public.archive("idDossier","fileName","path") VALUES (:folderId, :fileName, :path);</sql>
+	    <param type="IN" name="path" sqlType="STRING" paramType="SCALAR" optional="false" />
+	    <param type="IN" name="fileName" sqlType="STRING" paramType="SCALAR" optional="false" />
+	    <param type="IN" name="folderId" sqlType="INTEGER" paramType="SCALAR" optional="false" />
+	</query>
+	
+	<resource path="archives" method="GET">
+		<description />
+		<call-query href="allArchives" />
+	</resource>
+	<query id="allArchives" useConfig="dossierSomissionDS">
+	    <sql>SELECT * FROM public.archive</sql>
+	    <result outputType="json">
+	    	{
+	    		"data":{
+		    		"archives":[{
+		    			"idArchive":"$idArchive",
+		    			"idDossier":"$idDossier",
+			    		"fileName":"$fileName",
+						"path":"$path"
+					}]
+				}
+			}
+		</result>
+	</query>
+	
+	<resource path="deleteArchive" method="DELETE">
+        <description />
+        <call-query href="removeArchive">
+            <with-param name="idArchive" query-param="idArchive" />
+        </call-query>
+    </resource>
+    <query id="removeArchive" useConfig="dossierSomissionDS">
+        <sql>
+            DELETE FROM public.archive WHERE "idArchive" =:idArchive
+        </sql>
+        <param type="IN" name="idArchive" paramType="SCALAR" sqlType="INTEGER" />
+    </query>
+    
+    <resource path="archive" method="GET">
+		<description />
+		<call-query href="getArchive">
+			<with-param name="idArchive" query-param="idArchive" />
+		</call-query>
+	</resource>
+	<query id="getArchive" useConfig="dossierSomissionDS">
+	    <sql>SELECT * FROM public.archive WHERE "idArchive" =:idArchive</sql>
+	    <param type="IN" name="idArchive" sqlType="INTEGER" paramType="SCALAR" optional="false" />
+	    <result outputType="json">
+	    	{
+	    		"archive":{
+	    			"idArchive":"$idArchive",
+	    			"idDossier":"$idDossier",
+		    		"fileName":"$fileName",
+					"path":"$path"
+				}
+			}
+		</result>
+	</query>
+	
+	<resource path="archiveByFolder" method="GET">
+		<description />
+		<call-query href="getArchiveByFolder">
+			<with-param name="idDossier" query-param="idDossier" />
+		</call-query>
+	</resource>
+	<query id="getArchiveByFolder" useConfig="dossierSomissionDS">
+	    <sql>SELECT * FROM public.archive WHERE "idDossier" =:idDossier</sql>
+	    <param type="IN" name="idDossier" sqlType="INTEGER" paramType="SCALAR" optional="false" />
+	    <result outputType="json">
+	    	{
+	    		"data":{
+		    		"archives":[{
+		    			"idArchive":"$idArchive",
+		    			"idDossier":"$idDossier",
+			    		"fileName":"$fileName",
+						"path":"$path"
+					}]
+				}
+			}
+		</result>
+	</query>
+	<!-- #ARCHIVE -->
+	
 </data>
