@@ -395,6 +395,14 @@
   	<description />
   	<call-query href="getUnsentCompanies" />
   </resource>
+   <resource method="GET" path="getPersonneAssociateDirigeant">
+    <description />
+    <call-query href="getPersonneAssociateDirigeant" />
+  </resource>
+  <resource method="GET" path="number/associate/by/gender">
+  	<description />
+  	<call-query href="numberAssociateByGender" />
+  </resource>
   <resource path="setInstatInterStatus" method="PUT">
     <description />
     <call-query href="setInstatInterStatus">
@@ -1147,6 +1155,87 @@
 	    		"rcs":"$RCS",
 	    		"stat":"$STAT",
 	    		"nif":"$NIF"
+	    	}]
+	    }
+	}
+    </result>
+  </query>
+  
+  <query id="numberAssociateByGender" useConfig="societeDS">
+  	<sql>
+  		SELECT 
+  			CASE
+  				WHEN p."civilite" = '1' THEN 'H'
+  				WHEN p."civilite" = '2' THEN 'F'
+  			END AS gender, COUNT(*) AS number
+  		FROM public."associe" s 
+  		JOIN personne."personne" p ON s."idPersonne"= p."idPersonne"
+  		GROUP BY p."civilite"
+  	</sql>
+  	<result outputType="json">
+  		{
+  			"data":{
+	  			"detail":[{
+	  				"gender":"$gender",
+	  				"number":"$number"
+	  			}]
+  			}
+  		}
+  	</result>
+  </query>
+  
+  <query id="getPersonneAssociateDirigeant" useConfig="societeDS">
+    <sql>
+		WITH roles_agg AS (
+		    SELECT a."idAssocie",string_agg(r."libelle_role", ',') AS roles
+		    FROM public.associe a
+		        LEFT JOIN unnest(a."idStatutSociete") AS role_id ON TRUE
+		        JOIN personne."role" r ON role_id = r."id_role"
+		    GROUP BY
+		        a."idAssocie"
+		)
+		SELECT a."idAssocie", p."nom", p."prenom", p."dateNaissance",p."lieuNaissance", 
+		    CASE
+		        WHEN p."civilite" = '1' THEN 'H'
+		        WHEN p."civilite" = '2' THEN 'F'
+		        ELSE ''
+		    END AS "sexe",
+		    p."e_mail", p."tel", p."tel2",p."nationalite",tpi."nomTypePiece", pi."numeroPiece", 
+		    pi."dateDelivrancePiece", pi."lieuDelivrancePiece",a."partCapitalAssocie", 
+		    roles_agg.roles AS fonction, a."apportNature", d."labelDevise" AS "devise",a."descriptifApportEnNature", 
+		    d."labelDevise" AS "deviseApportNature", a."montantApportEnNature"
+		FROM public.associe a 
+		JOIN public."devise" d ON a."idDevise" = d."idDevise"
+		JOIN personne."personne" p ON a."idPersonne" = p."idPersonne"
+		JOIN personne."pieceIdentite" pi ON p."idPieceIdentite" = pi."id"
+		LEFT JOIN personne."typePieceIdentite" tpi ON pi."idTypePiece" = tpi."idTypePiece"
+		LEFT JOIN roles_agg ON a."idAssocie" = roles_agg."idAssocie";
+    </sql>
+    <result outputType="json">
+    {
+    	"data":{
+    		"personne":[{
+	    		"idAssocie":"$idAssocie",
+	    		"nom":"$nom",
+	    		"prenom":"$prenom",
+	    		"dateNaissance":"$dateNaissance",
+	    		"lieuNaissance":"$lieuNaissance",
+	    		"sexe":"$sexe",
+	    		"e_mail":"$e_mail",
+	    		"tel":"$tel",
+	    		"tel2":"$tel2",
+	    		"nationalite":"$nationalite",
+	    		"nomTypePiece":"$nomTypePiece",
+	    		"numeroPiece":"$numeroPiece",
+	    		"dateDelivrancePiece":"$dateDelivrancePiece",
+	    		"lieuDelivrancePiece":"$lieuDelivrancePiece",
+	    		"partCapitalAssocie":"$partCapitalAssocie",
+	    		"fonction":"$fonction",
+	    		"apportNature":"$apportNature",
+	    		"devise":"$devise",
+	    		"descriptifApportEnNature":"$descriptifApportEnNature",
+	    		"deviseApportNature":"$deviseApportNature",
+	    		"montantApportEnNature":"$montantApportEnNature",
 	    	}]
 	    }
 	}
