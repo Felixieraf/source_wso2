@@ -2148,11 +2148,12 @@ FROM   T where "idStatut"=4 or "idStatut"=3 ;
         </call-query>
     </resource>
     <query id="addArchive" useConfig="dossierSomissionDS">
-	    <sql>INSERT INTO public.archive("idDossier","fileName","path") VALUES (:folderId, :fileName, :path);</sql>
+	    <sql>INSERT INTO public.archive("idDossier","fileName","path") VALUES (:folderId, :fileName, :path) RETURNING archive."idArchive";</sql>
 	    <param type="IN" name="path" sqlType="STRING" paramType="SCALAR" optional="false" />
 	    <param type="IN" name="fileName" sqlType="STRING" paramType="SCALAR" optional="false" />
 	    <param type="IN" name="folderId" sqlType="INTEGER" paramType="SCALAR" optional="false" />
-	</query>
+	    <result outputType="json">{"archive":{"idArchive":"$idArchive"}}</result>
+    </query>
 	
 	<resource path="archives" method="GET">
 		<description />
@@ -2231,5 +2232,30 @@ FROM   T where "idStatut"=4 or "idStatut"=3 ;
 		</result>
 	</query>
 	<!-- #ARCHIVE -->
+	
+	
+	<!-- AUDIT ARCHIVE -->
+	<resource path="addAuditArchive" method="POST">
+		<description />
+		<call-query href="addAuditArchive">
+            <with-param name="archiveId" query-param="archiveId" />
+            <with-param name="action" query-param="action" />
+            <with-param name="fileName" query-param="fileName" />
+			<with-param name="folderId" query-param="folderId" />
+            <with-param name="path" query-param="path" />
+            <with-param name="userId" query-param="userId" />
+        </call-query>
+	</resource>
+	<query id="addAuditArchive" useConfig="dossierSomissionDS">
+		<sql>INSERT INTO public."auditArchive"("idArchive", "action", "fileName", "path", "idDossier", "userId") 
+		VALUES (:archiveId, :action, :fileName, :path, :folderId, :userId)</sql>
+		 <param type="IN" name="archiveId" sqlType="INTEGER" paramType="SCALAR" optional="false" />
+		 <param type="IN" name="action" sqlType="STRING" paramType="SCALAR" optional="false" />
+		 <param type="IN" name="fileName" sqlType="STRING" paramType="SCALAR" optional="false" />
+		 <param type="IN" name="path" sqlType="STRING" paramType="SCALAR" optional="false" />
+		 <param type="IN" name="folderId" sqlType="INTEGER" paramType="SCALAR" optional="false" />
+		 <param type="IN" name="userId" sqlType="STRING" paramType="SCALAR" optional="false" />
+	</query>
+	
 	
 </data>

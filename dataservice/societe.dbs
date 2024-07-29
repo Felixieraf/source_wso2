@@ -403,6 +403,10 @@
   	<description />
   	<call-query href="numberAssociateByGender" />
   </resource>
+  <resource path="number/associate/by/nationality" method="GET">
+  	<description />
+  	<call-query href="numberAssociateByNationality" />
+  </resource>
   <resource path="setInstatInterStatus" method="PUT">
     <description />
     <call-query href="setInstatInterStatus">
@@ -1179,6 +1183,26 @@
 	  				"gender":"$gender",
 	  				"number":"$number"
 	  			}]
+  			}
+  		}
+  	</result>
+  </query>
+  
+  <query id="numberAssociateByNationality" useConfig="societeDS">
+  	<sql>
+  		SELECT p."nationalite", COUNT(*) AS number 
+  		FROM public."associe" s
+  		JOIN personne."personne" p ON s."idPersonne"= p."idPersonne"
+  		GROUP BY p."nationalite"
+  		ORDER BY "number" DESC
+  	</sql>
+  	<result outputType="json">
+  		{
+  			"data":{
+  				"detail":[{
+  					"nationalite":"$nationalite",
+  					"number":"$number"
+  				}]
   			}
   		}
   	</result>
