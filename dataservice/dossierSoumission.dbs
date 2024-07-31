@@ -2264,7 +2264,9 @@ FROM   T where "idStatut"=4 or "idStatut"=3 ;
 		</call-query>
 	</resource>
 	<query id="auditArchiveByArchive" useConfig="dossierSomissionDS">
-		<sql>SELECT * FROM public."auditArchive" WHERE "idArchive" =:idArchive</sql>
+		<sql>SELECT *, to_char("createdAt", 'DD-MM-YYYY') AS "date",
+		 to_char("createdAt", 'HH24:MM:SS') AS "heure"
+  		FROM public."auditArchive" WHERE "idArchive" =:idArchive</sql>
 		<param type="IN" name="idArchive" sqlType="INTEGER" paramType="SCALAR" optional="false" />
 		<result outputType="json">
 			{
@@ -2275,7 +2277,9 @@ FROM   T where "idStatut"=4 or "idStatut"=3 ;
 						"fileName":"$fileName",
 						"path":"$path",
 						"idDossier":"$idDossier",
-						"username":"$username"
+						"username":"$username",
+						"date":"$date",
+						"heure":"$heure"
 					}]
 				}
 			}	
