@@ -407,6 +407,21 @@
   	<description />
   	<call-query href="numberAssociateByNationality" />
   </resource>
+  <resource path="number/society/created/by/legalStatus" method="GET">
+    <description>Statistic - number of society created by FJ</description>
+    <call-query href="numberSocietyCreatedByFormeJuridique">
+        <with-param name="startDate" query-param="startDate" />
+        <with-param name="endDate" query-param="endDate" />
+    </call-query>
+</resource>
+<resource path="number/society/created/by/sector" method="GET">
+	<description>Statistic - number of society created by sector activity</description>
+	<call-query href="numberSocieteCreatedBySector">
+        <with-param name="startDate" query-param="startDate" />
+        <with-param name="endDate" query-param="endDate" />
+	</call-query>
+</resource>
+  
   <resource path="setInstatInterStatus" method="PUT">
     <description />
     <call-query href="setInstatInterStatus">
@@ -1172,8 +1187,13 @@
   				WHEN p."civilite" = '1' THEN 'H'
   				WHEN p."civilite" = '2' THEN 'F'
   			END AS gender, COUNT(*) AS number
-  		FROM public."associe" s 
+  		FROM "societe"
+		JOIN "societeAssocie" ON "societeAssocie"."idSociete" = "societe"."idSociete"
+		JOIN "associe" s ON s."idAssocie" = "societeAssocie"."idAssocie"
   		JOIN personne."personne" p ON s."idPersonne"= p."idPersonne"
+  		WHERE "NIF" IS NOT NULL
+			AND "RCS" IS NOT NULL
+			AND "STAT" IS NOT NULL
   		GROUP BY p."civilite"
   	</sql>
   	<result outputType="json">
@@ -1191,8 +1211,13 @@
   <query id="numberAssociateByNationality" useConfig="societeDS">
   	<sql>
   		SELECT p."nationalite", COUNT(*) AS number 
-  		FROM public."associe" s
+  		FROM "societe"
+		JOIN "societeAssocie" ON "societeAssocie"."idSociete" = "societe"."idSociete"
+		JOIN "associe" s ON s."idAssocie" = "societeAssocie"."idAssocie"
   		JOIN personne."personne" p ON s."idPersonne"= p."idPersonne"
+  		WHERE "NIF" IS NOT NULL
+			AND "RCS" IS NOT NULL
+			AND "STAT" IS NOT NULL
   		GROUP BY p."nationalite"
   		ORDER BY "number" DESC
   	</sql>
@@ -1205,6 +1230,87 @@
   				}]
   			}
   		}
+  	</result>
+  </query>
+  
+  <query id="numberSocietyCreatedByFormeJuridique" useConfig="societeDS">
+  	<sql>
+  		SELECT
+    		TO_CHAR("dateNIF", 'MM-YYYY') AS month,
+			"formeJuridique",
+    		COUNT(*) AS numberOfCompaniesCreated
+		FROM
+    		societe
+		WHERE
+    		"dateNIF" IS NOT NULL
+   			 AND "dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+		GROUP BY
+			"formeJuridique",
+		    TO_CHAR("dateNIF", 'MM-YYYY'),
+		    EXTRACT(YEAR FROM "dateNIF"),
+		    EXTRACT(MONTH FROM "dateNIF")
+		ORDER BY
+		    EXTRACT(YEAR FROM "dateNIF") ASC,
+		    EXTRACT(MONTH FROM "dateNIF") ASC,
+			"formeJuridique";
+  	</sql>
+  	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<result outputType="json">
+  		{
+  			"data":{
+  				"detail":[{
+  					"legalStatus":"$formeJuridique",
+  					"month":"$month",
+  					"numberOfCompaniesCreated":"$numberOfCompaniesCreated"
+  				}]
+  			}
+  		}
+  				
+  	</result>
+  </query>
+  
+  <query id="numberSocieteCreatedBySector" useConfig="societeDS">
+  	<sql>
+	  	SELECT
+		    CASE
+		        WHEN SUBSTRING(CAST("STAT" AS TEXT) FROM 1 FOR 2) BETWEEN '01' AND '03' THEN 'Primaire'
+		        WHEN SUBSTRING(CAST("STAT" AS TEXT) FROM 1 FOR 2) BETWEEN '05' AND '43' THEN 'Secondaire'
+		        WHEN SUBSTRING(CAST("STAT" AS TEXT) FROM 1 FOR 2) BETWEEN '45' AND '99' THEN 'Tertiaire'
+		    END AS sector,
+			TO_CHAR("dateNIF", 'MM-YYYY') AS month,
+		    COUNT("idSociete") AS numberOfCompaniesCreated
+		FROM "societe"
+		WHERE (
+		    "NIF" IS NOT NULL
+		    AND "STAT" IS NOT NULL
+		    AND "RCS" IS NOT NULL 
+   			AND "dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+		)
+		GROUP BY
+		    sector,
+		    TO_CHAR("dateNIF", 'MM-YYYY'),
+		    EXTRACT(MONTH FROM "dateNIF"),
+			EXTRACT(YEAR FROM "dateNIF")
+		ORDER BY
+		    sector,
+			TO_CHAR("dateNIF", 'MM-YYYY'),
+		    EXTRACT(MONTH FROM "dateNIF") ASC,
+			EXTRACT(YEAR FROM "dateNIF")ASC;
+  	</sql>
+  	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<result outputType="json">
+  		{
+  			"data":{
+  				"detail":[{
+  					"sector":"$sector",
+  					"month":"$month",
+  					"numberOfCompaniesCreated":"$numberOfCompaniesCreated"
+  				}]
+  			}
+  		}
+  				
   	</result>
   </query>
   
