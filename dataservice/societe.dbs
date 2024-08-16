@@ -395,17 +395,44 @@
   	<description />
   	<call-query href="getUnsentCompanies" />
   </resource>
-   <resource method="GET" path="getPersonneAssociateDirigeant">
+   <resource method="GET" path="getPersonAssociateDirigeant">
     <description />
-    <call-query href="getPersonneAssociateDirigeant" />
+    <call-query href="getPersonAssociateDirigeant" />
+  </resource>
+  <resource path="getPersonMoralAssociate" method="GET">
+  	<description />
+  	<call-query href="getPersonMoralAssociate">
+  		<with-param name="startDate" query-param="startDate" />
+  		<with-param name="endDate" query-param="endDate" />
+  	</call-query>
   </resource>
   <resource method="GET" path="number/associate/by/gender">
   	<description />
-  	<call-query href="numberAssociateByGender" />
+  	<call-query href="numberAssociateByGender">
+  		<with-param name="startDate" query-param="startDate" />
+  		<with-param name="endDate" query-param="endDate" />
+  	</call-query>
   </resource>
   <resource path="number/associate/by/nationality" method="GET">
   	<description />
-  	<call-query href="numberAssociateByNationality" />
+  	<call-query href="numberAssociateByNationality">
+  		<with-param name="startDate" query-param="startDate" />
+  		<with-param name="endDate" query-param="endDate" />
+  	</call-query>
+  </resource>
+  <resource path="number/associate/majority/by/gender" method="GET">
+  	<description />
+  	<call-query href="numberAssociateMajorityByGender">
+        <with-param name="startDate" query-param="startDate" />
+        <with-param name="endDate" query-param="endDate" />
+  	</call-query>
+  </resource>
+  <resource path="number/associate/majority/by/nationality" method="GET">
+  	<description />
+  	<call-query href="numberAssociateMajorityByNationality">
+        <with-param name="startDate" query-param="startDate" />
+        <with-param name="endDate" query-param="endDate" />
+  	</call-query>
   </resource>
   <resource path="number/society/created/by/legalStatus" method="GET">
     <description>Statistic - number of society created by FJ</description>
@@ -413,14 +440,21 @@
         <with-param name="startDate" query-param="startDate" />
         <with-param name="endDate" query-param="endDate" />
     </call-query>
-</resource>
-<resource path="number/society/created/by/sector" method="GET">
-	<description>Statistic - number of society created by sector activity</description>
-	<call-query href="numberSocieteCreatedBySector">
-        <with-param name="startDate" query-param="startDate" />
-        <with-param name="endDate" query-param="endDate" />
-	</call-query>
-</resource>
+   </resource>
+   <resource path="number/society/created/by/sector" method="GET">
+	 <description>Statistic - number of society created by sector activity</description>
+	 <call-query href="numberSocieteCreatedBySector">
+	        <with-param name="startDate" query-param="startDate" />
+	        <with-param name="endDate" query-param="endDate" />
+		</call-query>
+  </resource>
+  <resource path="during/creation/companies" method="GET">
+  	<description />
+  	<call-query href="delaisCreationCompany">
+  		<with-param name="startDate" query-param="startDate" />
+  		<with-param name="endDate" query-param="endDate" />
+  	</call-query>
+  </resource>
   
   <resource path="setInstatInterStatus" method="PUT">
     <description />
@@ -1183,6 +1217,7 @@
   <query id="numberAssociateByGender" useConfig="societeDS">
   	<sql>
   		SELECT 
+    		TO_CHAR("dateNIF", 'Mon YYYY') AS month,
   			CASE
   				WHEN p."civilite" = '1' THEN 'H'
   				WHEN p."civilite" = '2' THEN 'F'
@@ -1194,13 +1229,62 @@
   		WHERE "NIF" IS NOT NULL
 			AND "RCS" IS NOT NULL
 			AND "STAT" IS NOT NULL
-  		GROUP BY p."civilite"
+			AND "dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+  		GROUP BY TO_CHAR("dateNIF", 'Mon YYYY'), p."civilite"
+		ORDER BY month ASC, gender ASC
   	</sql>
+  	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
   	<result outputType="json">
   		{
   			"data":{
 	  			"detail":[{
-	  				"gender":"$gender",
+	  				"month":"$month",
+	  				"Gender":"$gender",
+	  				"number":"$number"
+	  			}]
+  			}
+  		}
+  	</result>
+  </query>
+  
+  <query id="numberAssociateMajorityByGender" useConfig="societeDS">
+  	<sql>
+	  	WITH MaxParts AS (
+		    SELECT sa_inner."idSociete", MAX(s_inner."partCapitalAssocie") AS maxPart
+		    FROM "societeAssocie" sa_inner
+		    JOIN "associe" s_inner ON s_inner."idAssocie" = sa_inner."idAssocie"
+		    JOIN "societe" so_inner ON sa_inner."idSociete" = so_inner."idSociete"
+		    WHERE so_inner."NIF" IS NOT NULL
+		      AND so_inner."RCS" IS NOT NULL
+		      AND so_inner."STAT" IS NOT NULL
+   			  AND so_inner."dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+		    GROUP BY sa_inner."idSociete"
+		)
+		SELECT
+			TO_CHAR(so."dateNIF", 'Mon YYYY') AS month,
+			CASE
+		  		WHEN p."civilite" = '1' THEN 'H'
+		  		WHEN p."civilite" = '2' THEN 'F'
+		 	END AS gender, COUNT(*) AS number
+		FROM "societeAssocie" sa
+		JOIN "associe" s ON s."idAssocie" = sa."idAssocie"
+		JOIN "societe" so ON sa."idSociete" = so."idSociete"
+		JOIN personne."personne" p ON s."idPersonne"= p."idPersonne"
+		JOIN MaxParts mp ON sa."idSociete" = mp."idSociete" AND s."partCapitalAssocie" = mp.maxPart
+		WHERE so."NIF" IS NOT NULL
+		  AND so."RCS" IS NOT NULL
+		  AND so."STAT" IS NOT NULL
+		GROUP BY TO_CHAR(so."dateNIF", 'Mon YYYY'), p."civilite";
+  	</sql>
+  	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<result outputType="json">
+  		{
+  			"data":{
+	  			"detail":[{
+	  				"month":"$month",
+	  				"Gender":"$gender",
 	  				"number":"$number"
 	  			}]
   			}
@@ -1210,21 +1294,68 @@
   
   <query id="numberAssociateByNationality" useConfig="societeDS">
   	<sql>
-  		SELECT p."nationalite", COUNT(*) AS number 
+  		SELECT 
+    		TO_CHAR("dateNIF", 'Mon YYYY') AS month,
+    		n."libelle", COUNT(*) AS number 
   		FROM "societe"
 		JOIN "societeAssocie" ON "societeAssocie"."idSociete" = "societe"."idSociete"
 		JOIN "associe" s ON s."idAssocie" = "societeAssocie"."idAssocie"
   		JOIN personne."personne" p ON s."idPersonne"= p."idPersonne"
+		LEFT JOIN personne."nationalite" n ON n."code"=p."nationalite"
   		WHERE "NIF" IS NOT NULL
 			AND "RCS" IS NOT NULL
 			AND "STAT" IS NOT NULL
-  		GROUP BY p."nationalite"
-  		ORDER BY "number" DESC
+			AND "dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+  		GROUP BY TO_CHAR("dateNIF", 'Mon YYYY'), n."libelle"
+  		ORDER BY month ASC, "number" DESC
   	</sql>
+  	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
   	<result outputType="json">
   		{
   			"data":{
   				"detail":[{
+  					"month":"$month",
+  					"Nationality":"$libelle",
+  					"number":"$number"
+  				}]
+  			}
+  		}
+  	</result>
+  </query>
+  
+  <query id="numberAssociateMajorityByNationality" useConfig="societeDS">
+  	<sql>
+	  	WITH MaxParts AS (
+		    SELECT sa_inner."idSociete", MAX(s_inner."partCapitalAssocie") AS maxPart
+		    FROM "societeAssocie" sa_inner
+		    JOIN "associe" s_inner ON s_inner."idAssocie" = sa_inner."idAssocie"
+		    JOIN "societe" so_inner ON sa_inner."idSociete" = so_inner."idSociete"
+		    WHERE so_inner."NIF" IS NOT NULL
+		      AND so_inner."RCS" IS NOT NULL
+		      AND so_inner."STAT" IS NOT NULL
+   			  AND so_inner."dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+			GROUP BY sa_inner."idSociete"
+		)
+		SELECT TO_CHAR(so."dateNIF", 'Mon YYYY') AS month, p."nationalite", COUNT(*) AS number
+		FROM "societeAssocie" sa
+		JOIN "associe" s ON s."idAssocie" = sa."idAssocie"
+		JOIN "societe" so ON sa."idSociete" = so."idSociete"
+		JOIN personne."personne" p ON s."idPersonne"= p."idPersonne"
+		JOIN MaxParts mp ON sa."idSociete" = mp."idSociete" AND s."partCapitalAssocie" = mp.maxPart
+		WHERE so."NIF" IS NOT NULL
+		  AND so."RCS" IS NOT NULL
+		  AND so."STAT" IS NOT NULL
+		GROUP BY TO_CHAR(so."dateNIF", 'Mon YYYY'), p."nationalite"
+		ORDER BY number DESC;
+  	</sql>
+  	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<result outputType="json">
+  		{
+  			"data":{
+  				"detail":[{
+  					"month":"$month",
   					"nationalite":"$nationalite",
   					"number":"$number"
   				}]
@@ -1236,9 +1367,9 @@
   <query id="numberSocietyCreatedByFormeJuridique" useConfig="societeDS">
   	<sql>
   		SELECT
-    		TO_CHAR("dateNIF", 'MM-YYYY') AS month,
+    		TO_CHAR("dateNIF", 'Mon YYYY') AS month,
 			"formeJuridique",
-    		COUNT(*) AS numberOfCompaniesCreated
+    		COUNT(*) AS number
 		FROM
     		societe
 		WHERE
@@ -1246,7 +1377,7 @@
    			 AND "dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
 		GROUP BY
 			"formeJuridique",
-		    TO_CHAR("dateNIF", 'MM-YYYY'),
+		    TO_CHAR("dateNIF", 'Mon YYYY'),
 		    EXTRACT(YEAR FROM "dateNIF"),
 		    EXTRACT(MONTH FROM "dateNIF")
 		ORDER BY
@@ -1260,9 +1391,9 @@
   		{
   			"data":{
   				"detail":[{
-  					"legalStatus":"$formeJuridique",
+  					"LegalStatus":"$formeJuridique",
   					"month":"$month",
-  					"numberOfCompaniesCreated":"$numberOfCompaniesCreated"
+  					"number":"$number"
   				}]
   			}
   		}
@@ -1278,8 +1409,8 @@
 		        WHEN SUBSTRING(CAST("STAT" AS TEXT) FROM 1 FOR 2) BETWEEN '05' AND '43' THEN 'Secondaire'
 		        WHEN SUBSTRING(CAST("STAT" AS TEXT) FROM 1 FOR 2) BETWEEN '45' AND '99' THEN 'Tertiaire'
 		    END AS sector,
-			TO_CHAR("dateNIF", 'MM-YYYY') AS month,
-		    COUNT("idSociete") AS numberOfCompaniesCreated
+			TO_CHAR("dateNIF", 'Mon YYYY') AS month,
+		    COUNT("idSociete") AS number
 		FROM "societe"
 		WHERE (
 		    "NIF" IS NOT NULL
@@ -1289,12 +1420,12 @@
 		)
 		GROUP BY
 		    sector,
-		    TO_CHAR("dateNIF", 'MM-YYYY'),
+		    TO_CHAR("dateNIF", 'Mon YYYY'),
 		    EXTRACT(MONTH FROM "dateNIF"),
 			EXTRACT(YEAR FROM "dateNIF")
 		ORDER BY
 		    sector,
-			TO_CHAR("dateNIF", 'MM-YYYY'),
+			TO_CHAR("dateNIF", 'Mon YYYY'),
 		    EXTRACT(MONTH FROM "dateNIF") ASC,
 			EXTRACT(YEAR FROM "dateNIF")ASC;
   	</sql>
@@ -1304,48 +1435,110 @@
   		{
   			"data":{
   				"detail":[{
-  					"sector":"$sector",
+  					"Sector":"$sector",
   					"month":"$month",
-  					"numberOfCompaniesCreated":"$numberOfCompaniesCreated"
+  					"number":"$number"
   				}]
   			}
   		}
   				
   	</result>
   </query>
+  <query id="delaisCreationCompany" useConfig="societeDS">
+  	<sql>
+  		SELECT
+		    societe."denominationSocial" AS "denominationSocial",
+			TO_CHAR(h."createdAt"::timestamp, 'yyyy-mm-dd HH24:MI') AS "dateDepotDossier",
+			TO_CHAR((DATE_TRUNC('day', "dateNIF") + INTERVAL '12 hours')::timestamp, 'yyyy-mm-dd HH24:MI') AS "dateNIF",
+			AGE(DATE_TRUNC('day', "dateNIF") + INTERVAL '12 hours', h."createdAt") AS "delaisCreation"
+		FROM public.societe
+			JOIN dossier_somission."historiquePaiement" h ON h."idDossier" = "societe"."idDossier"
+		WHERE "NIF" IS NOT NULL
+		  AND "RCS" IS NOT NULL
+		  AND "STAT" IS NOT NULL
+		  AND "dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+		ORDER BY h."createdAt" ASC;
+  	</sql>
+  	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<result outputType="json">
+  		{
+  			"data":{
+  				"society":[{
+  					"denominationSocial":"$denominationSocial",
+  					"dateDepotDossier":"$dateDepotDossier",
+  					"dateNIF":"$dateNIF",
+  					"delaisCreation":"$delaisCreation"
+  				}]
+  			}
+  		}
+  	</result>
+  </query>
   
-  <query id="getPersonneAssociateDirigeant" useConfig="societeDS">
+  <query id="getPersonAssociateDirigeant" useConfig="societeDS">
     <sql>
-		WITH roles_agg AS (
-		    SELECT a."idAssocie",string_agg(r."libelle_role", ',') AS roles
-		    FROM public.associe a
-		        LEFT JOIN unnest(a."idStatutSociete") AS role_id ON TRUE
-		        JOIN personne."role" r ON role_id = r."id_role"
-		    GROUP BY
-		        a."idAssocie"
-		)
-		SELECT a."idAssocie", p."nom", p."prenom", p."dateNaissance",p."lieuNaissance", 
-		    CASE
-		        WHEN p."civilite" = '1' THEN 'H'
-		        WHEN p."civilite" = '2' THEN 'F'
-		        ELSE ''
-		    END AS "sexe",
-		    p."e_mail", p."tel", p."tel2",p."nationalite",tpi."nomTypePiece", pi."numeroPiece", 
-		    pi."dateDelivrancePiece", pi."lieuDelivrancePiece",a."partCapitalAssocie", 
-		    roles_agg.roles AS fonction, a."apportNature", d."labelDevise" AS "devise",a."descriptifApportEnNature", 
-		    d."labelDevise" AS "deviseApportNature", a."montantApportEnNature"
-		FROM public.associe a 
-		JOIN public."devise" d ON a."idDevise" = d."idDevise"
-		JOIN personne."personne" p ON a."idPersonne" = p."idPersonne"
-		JOIN personne."pieceIdentite" pi ON p."idPieceIdentite" = pi."id"
-		LEFT JOIN personne."typePieceIdentite" tpi ON pi."idTypePiece" = tpi."idTypePiece"
-		LEFT JOIN roles_agg ON a."idAssocie" = roles_agg."idAssocie";
+		SELECT 
+			"societe". "idSociete",
+			"denominationSocial",
+			"nom",
+			"prenom",
+			"dateNaissance",
+			"lieuNaissance",
+			CASE
+				WHEN "civilite" = '2' THEN 'F'
+				ELSE 'H'
+			END AS "sexe",
+			"nomTypePiece",
+			"numeroPiece",
+			"dateDelivrancePiece",
+			"lieuDelivrancePiece",
+			"partCapitalAssocie",
+			CASE
+				WHEN "associe"."apportNature" = 1 THEN "associe"."montantApportEnNature"
+				ELSE 0
+			END AS "MontantApportEnNature",
+			"e_mail",
+			"tel",
+			"tel2",
+			"libelle" AS "nationalite",
+			STRING_AGG(personne."role"."libelle_role", ', ') AS "Fonctions"
+		FROM "societe"
+			JOIN "societeAssocie" ON "societeAssocie"."idSociete" = "societe"."idSociete"
+			JOIN "associe" ON "associe"."idAssocie" = "societeAssocie"."idAssocie"
+			JOIN personne."personne" ON personne."personne"."idPersonne" = "associe"."idPersonne"
+			JOIN personne."pieceIdentite" ON personne."pieceIdentite"."id" = personne."personne"."idPieceIdentite"
+			JOIN personne."typePieceIdentite" ON personne."typePieceIdentite"."idTypePiece" = personne."pieceIdentite"."idTypePiece"
+			JOIN personne."nationalite" ON personne."nationalite"."code" = personne."personne"."nationalite"
+			JOIN personne."role" ON personne."role"."id_role" = ANY("associe"."idStatutSociete")
+		WHERE "NIF" IS NOT NULL
+			AND "RCS" IS NOT NULL
+			AND "STAT" IS NOT NULL
+		GROUP BY
+		    "societe"."idSociete",
+		    "denominationSocial",
+		    "nom",
+		    "prenom",
+		    "dateNaissance",
+		    "lieuNaissance",
+		    "civilite",
+		    "nomTypePiece",
+		    "numeroPiece",
+		    "dateDelivrancePiece",
+		    "lieuDelivrancePiece",
+		    "partCapitalAssocie",
+			"MontantApportEnNature",
+		    "e_mail",
+		    "tel",
+		    "tel2",
+		    "libelle"
+		ORDER BY "denominationSocial" ASC;
     </sql>
     <result outputType="json">
     {
     	"data":{
     		"personne":[{
-	    		"idAssocie":"$idAssocie",
+	    		"idSociete":"$idSociete",
+	    		"denominationSocial":"$denominationSocial",
 	    		"nom":"$nom",
 	    		"prenom":"$prenom",
 	    		"dateNaissance":"$dateNaissance",
@@ -1360,16 +1553,61 @@
 	    		"dateDelivrancePiece":"$dateDelivrancePiece",
 	    		"lieuDelivrancePiece":"$lieuDelivrancePiece",
 	    		"partCapitalAssocie":"$partCapitalAssocie",
-	    		"fonction":"$fonction",
-	    		"apportNature":"$apportNature",
-	    		"devise":"$devise",
-	    		"descriptifApportEnNature":"$descriptifApportEnNature",
-	    		"deviseApportNature":"$deviseApportNature",
+	    		"fonctions":"$fonctions",
 	    		"montantApportEnNature":"$montantApportEnNature",
 	    	}]
 	    }
 	}
     </result>
+  </query>
+  <query id="getPersonMoralAssociate" useConfig="societeDS">
+  	<sql>
+  		SELECT 
+			"societe"."idSociete",
+			"societe"."denominationSocial" AS "denominationSocial",
+			"associe"."idAssocie",
+			"personneMorale"."denominationSocial" AS "associe",
+			CASE
+				WHEN "personneMorale"."NIF" IS NOT NULL AND "personneMorale"."NIF" != '' THEN "personneMorale"."NIF"
+				ELSE "personneMorale"."KBIS"
+			END AS "nifOrKbis",
+			"nationalite"."libelle" AS "nationalite",
+			"partCapitalAssocie",
+			CASE
+				WHEN "associe"."apportNature" = 1 THEN "associe"."montantApportEnNature"
+				ELSE 0
+			END AS "montantApportEnNature"
+		FROM "societe"
+			JOIN "societeAssocie" ON "societeAssocie"."idSociete" = "societe"."idSociete"
+			JOIN "associe" ON "associe"."idAssocie" = "societeAssocie"."idAssocie"
+			JOIN personne."personneMorale" ON personne."personneMorale"."idPersonneMorale" = "associe"."idPersonneMoral"
+			JOIN personne."adresse" ON personne."adresse"."idAdresse" = personne."personneMorale"."idAdresse"
+			JOIN personne."nationalite" ON personne."nationalite"."code" = personne."adresse"."codePays"
+		WHERE "societe"."NIF" IS NOT NULL
+			AND "societe"."RCS" IS NOT NULL
+			AND "societe"."STAT" IS NOT NULL
+			AND "associe"."partCapitalAssocie" != 0
+			AND "societe"."dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+		ORDER BY "societe"."denominationSocial" ASC;
+  	</sql>
+  	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<result outputType="json">
+  	{
+    	"data":{
+    		"personne":[{
+	    		"idSociete":"$idSociete",
+	    		"denominationSocial":"$denominationSocial",
+	    		"idAssocie":"$idAssocie",
+	    		"associe":"$associe",
+	    		"nifOrKbis":"$nifOrKbis",
+	    		"nationalite":"$nationalite",
+	    		"partCapitalAssocie":"$partCapitalAssocie",
+	    		"montantApportEnNature":"$montantApportEnNature",
+	    	}]
+	    }
+	}
+  	</result>
   </query>
   <query id="setEdbmInterStatus" useConfig="societeDS">
     <sql>UPDATE public."statutInteroperabilite" SET "EDBM"=:status WHERE "idSociete"=ANY(:idsSociete::int[]) </sql>
