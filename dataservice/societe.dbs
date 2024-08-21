@@ -406,6 +406,10 @@
   		<with-param name="endDate" query-param="endDate" />
   	</call-query>
   </resource>
+  <resource path="getListLieuExploitation" method="GET">
+  	<description />
+  	<call-query href="getListLieuExploitation" />
+  </resource>
   <resource method="GET" path="number/associate/by/gender">
   	<description />
   	<call-query href="numberAssociateByGender">
@@ -451,6 +455,13 @@
   <resource path="during/creation/companies" method="GET">
   	<description />
   	<call-query href="delaisCreationCompany">
+  		<with-param name="startDate" query-param="startDate" />
+  		<with-param name="endDate" query-param="endDate" />
+  	</call-query>
+  </resource>
+  <resource path="during/creation/summary" method="GET">
+  	<description />
+  	<call-query href="delaisCreation">
   		<with-param name="startDate" query-param="startDate" />
   		<with-param name="endDate" query-param="endDate" />
   	</call-query>
@@ -1446,18 +1457,33 @@
   </query>
   <query id="delaisCreationCompany" useConfig="societeDS">
   	<sql>
-  		SELECT
-		    societe."denominationSocial" AS "denominationSocial",
-			TO_CHAR(h."createdAt"::timestamp, 'yyyy-mm-dd HH24:MI') AS "dateDepotDossier",
-			TO_CHAR((DATE_TRUNC('day', "dateNIF") + INTERVAL '12 hours')::timestamp, 'yyyy-mm-dd HH24:MI') AS "dateNIF",
-			AGE(DATE_TRUNC('day', "dateNIF") + INTERVAL '12 hours', h."createdAt") AS "delaisCreation"
-		FROM public.societe
-			JOIN dossier_somission."historiquePaiement" h ON h."idDossier" = "societe"."idDossier"
-		WHERE "NIF" IS NOT NULL
-		  AND "RCS" IS NOT NULL
-		  AND "STAT" IS NOT NULL
-		  AND "dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
-		ORDER BY h."createdAt" ASC;
+		WITH working_days AS (
+		    SELECT
+				societe."idSociete",
+		        societe."denominationSocial" AS "denominationSocial",
+		        h."createdAt" AS "dateDepotDossier",
+		        DATE_TRUNC('day', "dateNIF") + INTERVAL '12 hours' AS "dateNIF",
+		        -- Comptage des jours ouvrables uniquement
+		        (SELECT COUNT(*) - 1 
+		         FROM GENERATE_SERIES(h."createdAt"::date, DATE_TRUNC('day', "dateNIF")::date, '1 day') AS series(day)
+		         WHERE EXTRACT(ISODOW FROM series.day) BETWEEN 1 AND 5) AS "daysCount"
+		    FROM public.societe
+		    JOIN dossier_somission."historiquePaiement" h ON h."idDossier" = societe."idDossier"
+		    WHERE "NIF" IS NOT NULL
+		      AND "RCS" IS NOT NULL
+		      AND "STAT" IS NOT NULL
+			  AND "idSecteurActivite" = '37'
+   			AND "dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+		    GROUP BY societe."idSociete", societe."denominationSocial", h."createdAt", "dateNIF"
+		)
+		SELECT
+			"idSociete",
+		    "denominationSocial",
+		    TO_CHAR("dateDepotDossier"::timestamp, 'yyyy-mm-dd HH24:MI') AS "dateDepotDossier",
+		    TO_CHAR("dateNIF"::timestamp, 'yyyy-mm-dd HH24:MI') AS "dateNIF",
+		    "daysCount" AS "delaisCreationDay"
+		FROM working_days
+		ORDER BY "dateDepotDossier" ASC;
   	</sql>
   	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
   	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
@@ -1468,8 +1494,48 @@
   					"denominationSocial":"$denominationSocial",
   					"dateDepotDossier":"$dateDepotDossier",
   					"dateNIF":"$dateNIF",
-  					"delaisCreation":"$delaisCreation"
+  					"delaisCreationDay":"$delaisCreationDay"
   				}]
+  			}
+  		}
+  	</result>
+  </query>
+  
+  <query id="delaisCreation" useConfig="societeDS">
+  	<sql>
+  		WITH working_days AS (
+		    SELECT
+				societe."idSociete",
+		        societe."denominationSocial" AS "denominationSocial",
+		        h."createdAt" AS "dateDepotDossier",
+		        DATE_TRUNC('day', "dateNIF") + INTERVAL '12 hours' AS "dateNIF",
+		        -- Comptage des jours ouvrables uniquement
+		        (SELECT COUNT(*) - 1 
+		         FROM GENERATE_SERIES(h."createdAt"::date, DATE_TRUNC('day', "dateNIF")::date, '1 day') AS series(day)
+		         WHERE EXTRACT(ISODOW FROM series.day) BETWEEN 1 AND 5) AS "Days Count"
+		    FROM public.societe
+		    JOIN dossier_somission."historiquePaiement" h ON h."idDossier" = societe."idDossier"
+		    WHERE "NIF" IS NOT NULL
+		      AND "RCS" IS NOT NULL
+		      AND "STAT" IS NOT NULL
+			  AND "idSecteurActivite" = '37'
+   			AND "dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+		    GROUP BY societe."idSociete", societe."denominationSocial", h."createdAt", "dateNIF"
+		)
+		SELECT
+		    MIN("Days Count") AS "minEnJour",
+		    TRUNC(AVG("Days Count"), 2) AS "moyenEnJour",
+		    MAX("Days Count") AS "maxEnJour"
+		FROM working_days;
+  	</sql>
+  	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<result outputType="json">
+  		{
+  			data:{
+  				"minEnJour":"$minEnJour",
+  				"moyenEnJour":"$moyenEnJour",
+  				"maxEnJour":"$maxEnjour"
   			}
   		}
   	</result>
@@ -1607,6 +1673,49 @@
 	    	}]
 	    }
 	}
+  	</result>
+  </query>
+  <query id="getListLieuExploitation" useConfig="societeDS">
+  	<sql>
+  		SELECT 
+			"idSociete",
+			"denominationSocial",
+			"region"."name" AS "region",
+			"district"."name" AS "district",
+			"common"."name" AS "commune",
+			"fokontany"."name" AS "fokontany",
+			"adresse" AS "adresse",
+			"montantBail",
+			"dureebail"
+		FROM "societe"
+			JOIN "siegeSocial" ON "siegeSocial"."siegePrincipal" = "societe"."idSiegeSocial"
+			JOIN "adresse" ON "siegeSocial"."adresseSiegeSocial" = public."adresse"."idAdresse"
+			JOIN "localisation"."region" ON "region"."id" = "adresse"."idRegion"
+			JOIN "localisation"."district" ON "district"."id" = "adresse"."idDistrict"
+			JOIN "localisation"."common" ON "common"."id" = "adresse"."idCommune"
+			JOIN "localisation"."fokontany" ON "fokontany"."id" = "adresse"."idFokontany"
+		WHERE "NIF" IS NOT NULL
+			AND "STAT" IS NOT NULL
+			AND "RCS" IS NOT NULL
+		ORDER BY "denominationSocial" ASC
+  	</sql>
+  	<result outputType="json">
+  		{
+  			data:{
+  				lieuExploitation:[{
+  					"idSociete":"$idSociete",
+  					"denominationSocial":"$denominationSocial",
+  					"region":"$region",
+  					"district":"$district",
+  					"commune":"$commune",
+  					"fokontany":"$fokontany",
+  					"adresse":"$adresse",
+  					"montantBail":"$montantBail",
+  					"dureeBail":"$dureebail"
+  				}]
+  			}
+  		}
+  			
   	</result>
   </query>
   <query id="setEdbmInterStatus" useConfig="societeDS">
