@@ -397,7 +397,10 @@
   </resource>
    <resource method="GET" path="getPersonAssociateDirigeant">
     <description />
-    <call-query href="getPersonAssociateDirigeant" />
+    <call-query href="getPersonAssociateDirigeant">
+    	<with-param name="startDate" query-param="startDate" />
+    	<with-param name="endDate" query-param="endDate" />
+    </call-query>
   </resource>
   <resource path="getPersonMoralAssociate" method="GET">
   	<description />
@@ -406,9 +409,19 @@
   		<with-param name="endDate" query-param="endDate" />
   	</call-query>
   </resource>
+  <resource path="getAllCompanyCreated" method="GET">
+  	<description />
+  	<call-query href="getListSocietyCreated">
+  		<with-param name="startDate" query-param="startDate" />
+  		<with-param name="endDate" query-param="endDate" />
+  	</call-query>
+  </resource>
   <resource path="getListLieuExploitation" method="GET">
   	<description />
-  	<call-query href="getListLieuExploitation" />
+  	<call-query href="getListLieuExploitation">
+  		<with-param name="startDate" query-param="startDate" />
+  		<with-param name="endDate" query-param="endDate" />
+  	</call-query>
   </resource>
   <resource method="GET" path="number/associate/by/gender">
   	<description />
@@ -451,6 +464,13 @@
 	        <with-param name="startDate" query-param="startDate" />
 	        <with-param name="endDate" query-param="endDate" />
 		</call-query>
+  </resource>
+  <resource path="number/society/created/by/branch" method="GET">
+  	<description> Statistic - number of society created by categorie of activity</description>
+  	<call-query href="numberSocietyCreatedByBranch">
+  		<with-param name="startDate" query-param="startDate" />
+  		<with-param name="endDate" query-param="endDate" />
+  	</call-query>
   </resource>
   <resource path="during/creation/companies" method="GET">
   	<description />
@@ -1367,7 +1387,7 @@
   			"data":{
   				"detail":[{
   					"month":"$month",
-  					"nationalite":"$nationalite",
+  					"Nationalite":"$nationalite",
   					"number":"$number"
   				}]
   			}
@@ -1447,6 +1467,50 @@
   			"data":{
   				"detail":[{
   					"Sector":"$sector",
+  					"month":"$month",
+  					"number":"$number"
+  				}]
+  			}
+  		}
+  				
+  	</result>
+  </query>
+  <query id="numberSocietyCreatedByBranch" useConfig="societeDS">
+  	<sql>
+  		SELECT DISTINCT ON (ca."descriptivesCategorie_fr", TO_CHAR("dateNIF", 'Mon YYYY'))
+		    CASE
+		        WHEN SUBSTRING(CAST("STAT" AS TEXT) FROM 1 FOR 2) BETWEEN '01' AND '03' THEN 'Primaire'
+		        WHEN SUBSTRING(CAST("STAT" AS TEXT) FROM 1 FOR 2) BETWEEN '05' AND '43' THEN 'Secondaire'
+		        WHEN SUBSTRING(CAST("STAT" AS TEXT) FROM 1 FOR 2) BETWEEN '45' AND '99' THEN 'Tertiaire'
+		    END AS sector,
+		    SUBSTRING(CAST("STAT" AS TEXT) FROM 1 FOR 5) AS code,
+		    ca."descriptivesCategorie_fr" AS categorie,
+		    TO_CHAR("dateNIF", 'Mon YYYY') AS month,
+		    COUNT("idSociete") OVER (PARTITION BY ca."descriptivesCategorie_fr", TO_CHAR("dateNIF", 'Mon YYYY')) AS number
+		FROM "societe"
+		JOIN siteWebInformation."categorieActivite" ca 
+		    ON ca."id" = SUBSTRING(CAST("STAT" AS TEXT) FROM 1 FOR 5)
+		WHERE (
+			"NIF" IS NOT NULL
+		  	AND "STAT" IS NOT NULL
+		  	AND "RCS" IS NOT NULL
+   			AND "dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+   		)
+		ORDER BY
+		    ca."descriptivesCategorie_fr",
+		    TO_CHAR("dateNIF", 'Mon YYYY'),
+		    EXTRACT(YEAR FROM "dateNIF") ASC,
+		    EXTRACT(MONTH FROM "dateNIF") ASC;
+  	</sql>
+  	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<result outputType="json">
+  		{
+  			"data":{
+  				"detail":[{
+  					"sector":"$sector",
+  					"code":"$code",
+  					"categorie":"$categorie",
   					"month":"$month",
   					"number":"$number"
   				}]
@@ -1579,6 +1643,7 @@
 		WHERE "NIF" IS NOT NULL
 			AND "RCS" IS NOT NULL
 			AND "STAT" IS NOT NULL
+   			AND "dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
 		GROUP BY
 		    "societe"."idSociete",
 		    "denominationSocial",
@@ -1599,6 +1664,8 @@
 		    "libelle"
 		ORDER BY "denominationSocial" ASC;
     </sql>
+  	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
     <result outputType="json">
     {
     	"data":{
@@ -1675,6 +1742,108 @@
 	}
   	</result>
   </query>
+  <query id="getListSocietyCreated" useConfig="societeDS">
+  	<sql>
+  		SELECT
+			"idSociete",
+			"denominationSocial",
+			"nomCommercial",
+			"sigle",
+			"formeJuridique",
+			"objetSocial",
+			CASE
+				WHEN SUBSTRING(CAST("STAT" AS TEXT) FROM 1 FOR 2) BETWEEN '01' AND '09' THEN 'Primaire'
+				WHEN SUBSTRING(CAST("STAT" AS TEXT) FROM 1 FOR 2) BETWEEN '10' AND '43' THEN 'Secondaire'
+				WHEN SUBSTRING(CAST("STAT" AS TEXT) FROM 1 FOR 2) BETWEEN '45' AND '99' THEN 'Tertiaire'
+			END AS "secteur",
+			SUBSTRING(CAST("STAT" AS TEXT) FROM 1 FOR 5) AS "codeActivite",
+			CASE
+				WHEN "societe"."idSecteurActivite" = '37' THEN ''
+				ELSE "libelleSecteurActivite"
+			END AS "activiteReglemente",
+			CASE
+				WHEN "activiteImportExport" = 1 THEN 'Oui'
+				ELSE ''
+			END AS "importExport",
+			CASE
+				WHEN "activiteIndustrielCollecteur" = 1 THEN 'Oui'
+				ELSE ''
+			END AS "activiteIndustrielCollecteur",
+			CASE 
+				WHEN "activiteGrossiste" = 1 THEN 'Oui'
+				ELSE ''
+			END AS "grossiste",
+			"RCS" AS "rcs",
+			TO_CHAR("dateRCS" :: DATE, 'dd/mm/yyyy') AS "dateRCS",
+			"NIF" AS "nif",
+			TO_CHAR("dateNIF" :: DATE, 'dd/mm/yyyy') AS "dateNIF",
+			"STAT" AS "stat",
+			TO_CHAR("dateSTAT" :: DATE, 'dd/mm/yyyy') AS "dateSTAT",
+			"capital",
+			'' AS "nbemployes",
+			"region"."name" AS "region",
+			"district"."name" AS "district",
+			"common"."name" AS "commune",
+			"fokontany"."name" AS "fokontany",
+			"adresse",
+			TO_CHAR("finExerciceSocial" :: DATE, 'dd/mm/yyyy') AS "finExerciceSocial",
+			"montantBail",
+			"dureebail",
+			"duree"
+		FROM "societe"
+			JOIN "secteurActivite" ON ("societe"."idSecteurActivite")::int = "secteurActivite"."idSecteurActivite"
+			JOIN "siegeSocial" ON "societe"."idSiegeSocial" = "siegeSocial"."idSiege"
+			JOIN "adresse" ON "siegeSocial"."adresseSiegeSocial" = public."adresse"."idAdresse"
+			JOIN "localisation"."region" ON "region"."id" = "adresse"."idRegion"
+			JOIN "localisation"."district" ON "district"."id" = "adresse"."idDistrict"
+			JOIN "localisation"."common" ON "common"."id" = "adresse"."idCommune"
+			JOIN "localisation"."fokontany" ON "fokontany"."id" = "adresse"."idFokontany"
+		WHERE "NIF" IS NOT NULL
+			AND "STAT" IS NOT NULL
+			AND "RCS" IS NOT NULL
+			AND "societe"."dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+		ORDER BY "denominationSocial" ASC;
+  	</sql>
+  	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<result outputType="json">
+  		{
+  			data:{
+  				society:[{
+  					"idSociete":"$idSociete",
+  					"denominationSocial":"$denominationSocial",
+  					"nomCommercial":"$nomCommercial",
+  					"sigle":"$sigle",
+					"formeJuridique":"$formeJuridique",
+					"objetSocial":"$objetSocial",
+					"secteur":"$secteur",
+					"codeActivite":"$codeActivite",
+					"activiteReglemente":"$activiteReglemente",
+					"importExport":"$importExport",
+					"activiteIndustrielCollecteur":"$activiteIndustrielCollecteur",
+					"grossiste":"$grossiste",
+					"RCS":"$rcs",
+					"dateRCS":"$dateRCS",
+					"NIF":"$nif",
+					"dateNIF":"$dateNIF",
+					"STAT":"$stat",
+					"dateSTAT":"$dateSTAT",
+					"capital":"$capital",
+					"nbemployes":"$nbemployes",
+  					"region":"$region",
+  					"district":"$district",
+  					"commune":"$commune",
+  					"fokontany":"$fokontany",
+  					"adresse":"$adresse",
+  					"finExerciceSocial":"$finExerciceSocial",
+  					"montantBail":"$montantBail",
+  					"dureeBail":"$dureebail",
+  					"duree":"$duree"
+  				}]
+  			}
+  		}
+  	</result>
+  </query>
   <query id="getListLieuExploitation" useConfig="societeDS">
   	<sql>
   		SELECT 
@@ -1697,8 +1866,11 @@
 		WHERE "NIF" IS NOT NULL
 			AND "STAT" IS NOT NULL
 			AND "RCS" IS NOT NULL
+			AND "societe"."dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
 		ORDER BY "denominationSocial" ASC
   	</sql>
+  	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
   	<result outputType="json">
   		{
   			data:{
