@@ -1368,16 +1368,17 @@
    			  AND so_inner."dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
 			GROUP BY sa_inner."idSociete"
 		)
-		SELECT TO_CHAR(so."dateNIF", 'Mon YYYY') AS month, p."nationalite", COUNT(*) AS number
+		SELECT TO_CHAR(s."dateNIF", 'Mon YYYY') AS month, n."libelle", COUNT(*) AS number
 		FROM "societeAssocie" sa
-		JOIN "associe" s ON s."idAssocie" = sa."idAssocie"
-		JOIN "societe" so ON sa."idSociete" = so."idSociete"
-		JOIN personne."personne" p ON s."idPersonne"= p."idPersonne"
-		JOIN MaxParts mp ON sa."idSociete" = mp."idSociete" AND s."partCapitalAssocie" = mp.maxPart
-		WHERE so."NIF" IS NOT NULL
-		  AND so."RCS" IS NOT NULL
-		  AND so."STAT" IS NOT NULL
-		GROUP BY TO_CHAR(so."dateNIF", 'Mon YYYY'), p."nationalite"
+		JOIN "associe" a ON a."idAssocie" = sa."idAssocie"
+		JOIN "societe" s ON sa."idSociete" = s."idSociete"
+		JOIN personne."personne" p ON a."idPersonne"= p."idPersonne"
+		LEFT JOIN personne."nationalite" n ON n."code"= p."nationalite"
+		JOIN MaxParts mp ON sa."idSociete" = mp."idSociete" AND a."partCapitalAssocie" = mp.maxPart
+		WHERE s."NIF" IS NOT NULL
+		  AND s."RCS" IS NOT NULL
+		  AND s."STAT" IS NOT NULL
+		GROUP BY TO_CHAR(s."dateNIF", 'Mon YYYY'), n."libelle"
 		ORDER BY number DESC;
   	</sql>
   	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
@@ -1387,7 +1388,7 @@
   			"data":{
   				"detail":[{
   					"month":"$month",
-  					"Nationalite":"$nationalite",
+  					"Nationalite":"$libelle",
   					"number":"$number"
   				}]
   			}
