@@ -8,19 +8,19 @@
     <property name="password">devedbmdb</property>
   </config> -->
   <!-- CONFIGURATION TEST -->
-  <config id="societeDS">
+  <!-- <config id="societeDS">
     <property name="driverClassName">org.postgresql.Driver</property>
     <property name="url">jdbc:postgresql://13.246.0.44:5432/societe</property>
     <property name="username">devedbmdb</property>
     <property name="password">devedbmdb</property>
-  </config>
+  </config> -->
   <!-- CONFIGURATION DEV -->
-  <!-- <config id="societeDS"> 
+  <config id="societeDS"> 
     <property name="driverClassName">org.postgresql.Driver</property>
     <property name="url">jdbc:postgresql://localhost:5432/societe</property>
     <property name="username">postgres</property>
     <property name="password">postgres</property>
-  </config> -->
+  </config>
 
   <resource path="addSocietyForm" method="POST">
     <description>add society from online form</description>
@@ -1548,7 +1548,7 @@
 		    TO_CHAR("dateNIF"::timestamp, 'yyyy-mm-dd HH24:MI') AS "dateNIF",
 		    "daysCount" AS "delaisCreationDay"
 		FROM working_days
-		ORDER BY "dateDepotDossier" ASC;
+		ORDER BY "dateNIF" ASC;
   	</sql>
   	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
   	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
@@ -1613,7 +1613,7 @@
 			"denominationSocial",
 			"nom",
 			"prenom",
-			"dateNaissance",
+			TO_CHAR("dateNaissance" :: DATE, 'dd/mm/yyyy') AS "dateNaissance",
 			"lieuNaissance",
 			CASE
 				WHEN "civilite" = '2' THEN 'F'
@@ -1621,7 +1621,7 @@
 			END AS "sexe",
 			"nomTypePiece",
 			"numeroPiece",
-			"dateDelivrancePiece",
+			TO_CHAR("dateDelivrancePiece" :: DATE, 'dd/mm/yyyy') AS "dateDelivrancePiece",
 			"lieuDelivrancePiece",
 			"partCapitalAssocie",
 			CASE
@@ -1706,7 +1706,7 @@
 				ELSE "personneMorale"."KBIS"
 			END AS "nifOrKbis",
 			"nationalite"."libelle" AS "nationalite",
-			"partCapitalAssocie",
+			TRIM(TRAILING '.' FROM TO_CHAR("partCapitalAssocie", 'FM999,999,999,999.99')) AS "partCapitalAssocie",
 			CASE
 				WHEN "associe"."apportNature" = 1 THEN "associe"."montantApportEnNature"
 				ELSE 0
