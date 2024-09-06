@@ -8,19 +8,19 @@
     <property name="password">devedbmdb</property>
   </config> -->
   <!-- CONFIGURATION TEST -->
-  <!-- <config id="societeDS">
+  <config id="societeDS">
     <property name="driverClassName">org.postgresql.Driver</property>
     <property name="url">jdbc:postgresql://13.246.0.44:5432/societe</property>
     <property name="username">devedbmdb</property>
     <property name="password">devedbmdb</property>
-  </config> -->
+  </config>
   <!-- CONFIGURATION DEV -->
-  <config id="societeDS"> 
+  <!-- <config id="societeDS"> 
     <property name="driverClassName">org.postgresql.Driver</property>
     <property name="url">jdbc:postgresql://localhost:5432/societe</property>
     <property name="username">postgres</property>
     <property name="password">postgres</property>
-  </config>
+  </config> -->
 
   <resource path="addSocietyForm" method="POST">
     <description>add society from online form</description>
@@ -359,6 +359,7 @@
       <with-param name="idSociete" query-param="idSociete" />
       <with-param name="NIF" query-param="NIF" />
       <with-param name="dateNIF" query-param="dateNIF" />
+      <with-param name="timeNIF" query-param="timeNIF" />
     </call-query>
   </resource>
   <resource path="updateSTAT" method="PUT">
@@ -1160,10 +1161,11 @@
   </query>
   <query id="updateNIF" useConfig="societeDS">
     <sql>UPDATE public.societe
-	SET  "NIF"=:NIF, "dateNIF"=:dateNIF  WHERE "idSociete"=:idSociete</sql>
+	SET  "NIF"=:NIF, "dateNIF"=:dateNIF, "timeNIF"=:timeNIF  WHERE "idSociete"=:idSociete</sql>
     <param type="IN" name="idSociete" sqlType="INTEGER" paramType="SCALAR" optional="false" />
     <param type="IN" name="NIF" sqlType="STRING" paramType="SCALAR" optional="false" />
     <param type="IN" name="dateNIF" sqlType="DATE" paramType="SCALAR" optional="false" />
+    <param type="IN" name="timeNIF" sqlType="TIME" paramType="SCALAR" optional="false" />
   </query>
   <query id="updateSTAT" useConfig="societeDS">
     <sql>UPDATE public.societe
