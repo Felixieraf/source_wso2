@@ -401,6 +401,7 @@
     <call-query href="getPersonAssociateDirigeant">
     	<with-param name="startDate" query-param="startDate" />
     	<with-param name="endDate" query-param="endDate" />
+  		<with-param name="idsDistrict" query-param="idsDistrict" />
     </call-query>
   </resource>
   <resource path="getPersonMoralAssociate" method="GET">
@@ -408,6 +409,7 @@
   	<call-query href="getPersonMoralAssociate">
   		<with-param name="startDate" query-param="startDate" />
   		<with-param name="endDate" query-param="endDate" />
+  		<with-param name="idsDistrict" query-param="idsDistrict" />
   	</call-query>
   </resource>
   <resource path="getAllCompanyCreated" method="GET">
@@ -415,6 +417,7 @@
   	<call-query href="getListSocietyCreated">
   		<with-param name="startDate" query-param="startDate" />
   		<with-param name="endDate" query-param="endDate" />
+  		<with-param name="idsDistrict" query-param="idsDistrict" />
   	</call-query>
   </resource>
   <resource path="getListLieuExploitation" method="GET">
@@ -422,6 +425,7 @@
   	<call-query href="getListLieuExploitation">
   		<with-param name="startDate" query-param="startDate" />
   		<with-param name="endDate" query-param="endDate" />
+  		<with-param name="idsDistrict" query-param="idsDistrict" />
   	</call-query>
   </resource>
   <resource method="GET" path="number/associate/by/gender">
@@ -429,6 +433,8 @@
   	<call-query href="numberAssociateByGender">
   		<with-param name="startDate" query-param="startDate" />
   		<with-param name="endDate" query-param="endDate" />
+  		<with-param name="idsDistrict" query-param="idsDistrict" />
+    
   	</call-query>
   </resource>
   <resource path="number/associate/by/nationality" method="GET">
@@ -436,6 +442,7 @@
   	<call-query href="numberAssociateByNationality">
   		<with-param name="startDate" query-param="startDate" />
   		<with-param name="endDate" query-param="endDate" />
+  		<with-param name="idsDistrict" query-param="idsDistrict" />
   	</call-query>
   </resource>
   <resource path="number/associate/majority/by/gender" method="GET">
@@ -443,6 +450,7 @@
   	<call-query href="numberAssociateMajorityByGender">
         <with-param name="startDate" query-param="startDate" />
         <with-param name="endDate" query-param="endDate" />
+  		<with-param name="idsDistrict" query-param="idsDistrict" />
   	</call-query>
   </resource>
   <resource path="number/associate/majority/by/nationality" method="GET">
@@ -450,6 +458,7 @@
   	<call-query href="numberAssociateMajorityByNationality">
         <with-param name="startDate" query-param="startDate" />
         <with-param name="endDate" query-param="endDate" />
+  		<with-param name="idsDistrict" query-param="idsDistrict" />
   	</call-query>
   </resource>
   <resource path="number/society/created/by/legalStatus" method="GET">
@@ -457,6 +466,7 @@
     <call-query href="numberSocietyCreatedByFormeJuridique">
         <with-param name="startDate" query-param="startDate" />
         <with-param name="endDate" query-param="endDate" />
+  		<with-param name="idsDistrict" query-param="idsDistrict" />
     </call-query>
    </resource>
    <resource path="number/society/created/by/sector" method="GET">
@@ -464,6 +474,7 @@
 	 <call-query href="numberSocieteCreatedBySector">
 	        <with-param name="startDate" query-param="startDate" />
 	        <with-param name="endDate" query-param="endDate" />
+  		<with-param name="idsDistrict" query-param="idsDistrict" />
 		</call-query>
   </resource>
   <resource path="number/society/created/by/branch" method="GET">
@@ -471,6 +482,7 @@
   	<call-query href="numberSocietyCreatedByBranch">
   		<with-param name="startDate" query-param="startDate" />
   		<with-param name="endDate" query-param="endDate" />
+  		<with-param name="idsDistrict" query-param="idsDistrict" />
   	</call-query>
   </resource>
   <resource path="during/creation/companies" method="GET">
@@ -478,6 +490,7 @@
   	<call-query href="delaisCreationCompany">
   		<with-param name="startDate" query-param="startDate" />
   		<with-param name="endDate" query-param="endDate" />
+  		<with-param name="idsDistrict" query-param="idsDistrict" />
   	</call-query>
   </resource>
   <resource path="during/creation/summary" method="GET">
@@ -485,6 +498,7 @@
   	<call-query href="delaisCreation">
   		<with-param name="startDate" query-param="startDate" />
   		<with-param name="endDate" query-param="endDate" />
+  		<with-param name="idsDistrict" query-param="idsDistrict" />
   	</call-query>
   </resource>
   
@@ -1259,15 +1273,19 @@
 		JOIN "societeAssocie" ON "societeAssocie"."idSociete" = "societe"."idSociete"
 		JOIN "associe" s ON s."idAssocie" = "societeAssocie"."idAssocie"
   		JOIN personne."personne" p ON s."idPersonne"= p."idPersonne"
+        JOIN "siegeSocial" ss ON ss."idSiege" = "societe"."idSiegeSocial"
+        JOIN "adresse" a ON a."idAdresse" = ss."idSiege"
   		WHERE "NIF" IS NOT NULL
 			AND "RCS" IS NOT NULL
 			AND "STAT" IS NOT NULL
 			AND "dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+            AND "idDistrict"=ANY(:idsDistrict::int[])
   		GROUP BY TO_CHAR("dateNIF", 'Mon YYYY'), p."civilite"
 		ORDER BY month ASC, gender ASC
   	</sql>
   	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
   	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<param type="IN" name="idsDistrict" sqlType="STRING" paramType="ARRAY" optional="false" />
   	<result outputType="json">
   		{
   			"data":{
@@ -1288,10 +1306,13 @@
 		    FROM "societeAssocie" sa_inner
 		    JOIN "associe" s_inner ON s_inner."idAssocie" = sa_inner."idAssocie"
 		    JOIN "societe" so_inner ON sa_inner."idSociete" = so_inner."idSociete"
+		    JOIN "siegeSocial" ss ON ss."idSiege" = so_inner."idSiegeSocial"
+        	JOIN "adresse" a ON a."idAdresse" = ss."idSiege"
 		    WHERE so_inner."NIF" IS NOT NULL
 		      AND so_inner."RCS" IS NOT NULL
 		      AND so_inner."STAT" IS NOT NULL
    			  AND so_inner."dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+            AND "idDistrict"=ANY(:idsDistrict::int[])
 		    GROUP BY sa_inner."idSociete"
 		)
 		SELECT
@@ -1312,6 +1333,7 @@
   	</sql>
   	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
   	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<param type="IN" name="idsDistrict" sqlType="STRING" paramType="ARRAY" optional="false" />
   	<result outputType="json">
   		{
   			"data":{
@@ -1335,15 +1357,19 @@
 		JOIN "associe" s ON s."idAssocie" = "societeAssocie"."idAssocie"
   		JOIN personne."personne" p ON s."idPersonne"= p."idPersonne"
 		LEFT JOIN personne."nationalite" n ON n."code"=p."nationalite"
+  		JOIN "siegeSocial" ss ON ss."idSiege" = "societe"."idSiegeSocial"
+        JOIN "adresse" a ON a."idAdresse" = ss."idSiege"
   		WHERE "NIF" IS NOT NULL
 			AND "RCS" IS NOT NULL
 			AND "STAT" IS NOT NULL
 			AND "dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+            AND "idDistrict"=ANY(:idsDistrict::int[])
   		GROUP BY TO_CHAR("dateNIF", 'Mon YYYY'), n."libelle"
   		ORDER BY month ASC, "number" DESC
   	</sql>
   	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
   	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<param type="IN" name="idsDistrict" sqlType="STRING" paramType="ARRAY" optional="false" />
   	<result outputType="json">
   		{
   			"data":{
@@ -1364,10 +1390,13 @@
 		    FROM "societeAssocie" sa_inner
 		    JOIN "associe" s_inner ON s_inner."idAssocie" = sa_inner."idAssocie"
 		    JOIN "societe" so_inner ON sa_inner."idSociete" = so_inner."idSociete"
+  			JOIN "siegeSocial" ss ON ss."idSiege" = so_inner."idSiegeSocial"
+        	JOIN "adresse" a ON a."idAdresse" = ss."idSiege"
 		    WHERE so_inner."NIF" IS NOT NULL
 		      AND so_inner."RCS" IS NOT NULL
 		      AND so_inner."STAT" IS NOT NULL
    			  AND so_inner."dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+              AND "idDistrict"=ANY(:idsDistrict::int[])
 			GROUP BY sa_inner."idSociete"
 		)
 		SELECT TO_CHAR(s."dateNIF", 'Mon YYYY') AS month, n."libelle", COUNT(*) AS number
@@ -1385,6 +1414,7 @@
   	</sql>
   	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
   	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<param type="IN" name="idsDistrict" sqlType="STRING" paramType="ARRAY" optional="false" />
   	<result outputType="json">
   		{
   			"data":{
@@ -1405,10 +1435,13 @@
 			"formeJuridique",
     		COUNT(*) AS number
 		FROM
-    		societe
+    		societe s
+  			JOIN "siegeSocial" ss ON ss."idSiege" = s."idSiegeSocial"
+        	JOIN "adresse" a ON a."idAdresse" = ss."idSiege"
 		WHERE
     		"dateNIF" IS NOT NULL
    			 AND "dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+             AND "idDistrict"=ANY(:idsDistrict::int[])
 		GROUP BY
 			"formeJuridique",
 		    TO_CHAR("dateNIF", 'Mon YYYY'),
@@ -1421,6 +1454,7 @@
   	</sql>
   	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
   	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<param type="IN" name="idsDistrict" sqlType="STRING" paramType="ARRAY" optional="false" />
   	<result outputType="json">
   		{
   			"data":{
@@ -1445,12 +1479,15 @@
 		    END AS sector,
 			TO_CHAR("dateNIF", 'Mon YYYY') AS month,
 		    COUNT("idSociete") AS number
-		FROM "societe"
+		FROM "societe" s
+  			JOIN "siegeSocial" ss ON ss."idSiege" = s."idSiegeSocial"
+        	JOIN "adresse" a ON a."idAdresse" = ss."idSiege"
 		WHERE (
 		    "NIF" IS NOT NULL
 		    AND "STAT" IS NOT NULL
 		    AND "RCS" IS NOT NULL 
    			AND "dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+            AND "idDistrict"=ANY(:idsDistrict::int[])
 		)
 		GROUP BY
 		    sector,
@@ -1465,6 +1502,7 @@
   	</sql>
   	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
   	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<param type="IN" name="idsDistrict" sqlType="STRING" paramType="ARRAY" optional="false" />
   	<result outputType="json">
   		{
   			"data":{
@@ -1490,14 +1528,16 @@
 		    ca."descriptivesCategorie_fr" AS categorie,
 		    TO_CHAR("dateNIF", 'Mon YYYY') AS month,
 		    COUNT("idSociete") OVER (PARTITION BY ca."descriptivesCategorie_fr", TO_CHAR("dateNIF", 'Mon YYYY')) AS number
-		FROM "societe"
-		JOIN siteWebInformation."categorieActivite" ca 
-		    ON ca."id" = SUBSTRING(CAST("STAT" AS TEXT) FROM 1 FOR 5)
+		FROM "societe" s
+  			JOIN "siegeSocial" ss ON ss."idSiege" = s."idSiegeSocial"
+        	JOIN "adresse" a ON a."idAdresse" = ss."idSiege"
+			JOIN siteWebInformation."categorieActivite" ca ON ca."id" = SUBSTRING(CAST("STAT" AS TEXT) FROM 1 FOR 5)
 		WHERE (
 			"NIF" IS NOT NULL
 		  	AND "STAT" IS NOT NULL
 		  	AND "RCS" IS NOT NULL
    			AND "dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+            AND "idDistrict"=ANY(:idsDistrict::int[])
    		)
 		ORDER BY
 		    ca."descriptivesCategorie_fr",
@@ -1507,6 +1547,7 @@
   	</sql>
   	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
   	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<param type="IN" name="idsDistrict" sqlType="STRING" paramType="ARRAY" optional="false" />
   	<result outputType="json">
   		{
   			"data":{
@@ -1536,11 +1577,14 @@
 		         WHERE EXTRACT(ISODOW FROM series.day) BETWEEN 1 AND 5) AS "daysCount"
 		    FROM public.societe
 		    JOIN dossier_somission."historiquePaiement" h ON h."idDossier" = societe."idDossier"
+  			JOIN "siegeSocial" ss ON ss."idSiege" = societe."idSiegeSocial"
+        	JOIN "adresse" a ON a."idAdresse" = ss."idSiege"
 		    WHERE "NIF" IS NOT NULL
 		      AND "RCS" IS NOT NULL
 		      AND "STAT" IS NOT NULL
 			  AND "idSecteurActivite" = '37'
    			AND "dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+            AND "idDistrict"=ANY(:idsDistrict::int[])
 		    GROUP BY societe."idSociete", societe."denominationSocial", h."createdAt", "dateNIF"
 		)
 		SELECT
@@ -1554,6 +1598,7 @@
   	</sql>
   	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
   	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<param type="IN" name="idsDistrict" sqlType="STRING" paramType="ARRAY" optional="false" />
   	<result outputType="json">
   		{
   			"data":{
@@ -1582,11 +1627,14 @@
 		         WHERE EXTRACT(ISODOW FROM series.day) BETWEEN 1 AND 5) AS "Days Count"
 		    FROM public.societe
 		    JOIN dossier_somission."historiquePaiement" h ON h."idDossier" = societe."idDossier"
+  			JOIN "siegeSocial" ss ON ss."idSiege" = societe."idSiegeSocial"
+        	JOIN "adresse" a ON a."idAdresse" = ss."idSiege"
 		    WHERE "NIF" IS NOT NULL
-		      AND "RCS" IS NOT NULL
-		      AND "STAT" IS NOT NULL
-			  AND "idSecteurActivite" = '37'
-   			AND "dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+		      	AND "RCS" IS NOT NULL
+		      	AND "STAT" IS NOT NULL
+			  	AND "idSecteurActivite" = '37'
+   				AND "dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+            	AND "idDistrict"=ANY(:idsDistrict::int[])
 		    GROUP BY societe."idSociete", societe."denominationSocial", h."createdAt", "dateNIF"
 		)
 		SELECT
@@ -1597,6 +1645,7 @@
   	</sql>
   	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
   	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<param type="IN" name="idsDistrict" sqlType="STRING" paramType="ARRAY" optional="false" />
   	<result outputType="json">
   		{
   			data:{
@@ -1643,10 +1692,13 @@
 			JOIN personne."typePieceIdentite" ON personne."typePieceIdentite"."idTypePiece" = personne."pieceIdentite"."idTypePiece"
 			JOIN personne."nationalite" ON personne."nationalite"."code" = personne."personne"."nationalite"
 			JOIN personne."role" ON personne."role"."id_role" = ANY("associe"."idStatutSociete")
+			JOIN "siegeSocial" ss ON ss."idSiege" = "societe"."idSiegeSocial"
+        	JOIN "adresse" a ON a."idAdresse" = ss."idSiege"
 		WHERE "NIF" IS NOT NULL
 			AND "RCS" IS NOT NULL
 			AND "STAT" IS NOT NULL
    			AND "dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+            AND a."idDistrict"=ANY(:idsDistrict::int[])
 		GROUP BY
 		    "societe"."idSociete",
 		    "denominationSocial",
@@ -1669,6 +1721,7 @@
     </sql>
   	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
   	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<param type="IN" name="idsDistrict" sqlType="STRING" paramType="ARRAY" optional="false" />
     <result outputType="json">
     {
     	"data":{
@@ -1719,15 +1772,19 @@
 			JOIN personne."personneMorale" ON personne."personneMorale"."idPersonneMorale" = "associe"."idPersonneMoral"
 			JOIN personne."adresse" ON personne."adresse"."idAdresse" = personne."personneMorale"."idAdresse"
 			JOIN personne."nationalite" ON personne."nationalite"."code" = personne."adresse"."codePays"
+			JOIN "siegeSocial" ss ON ss."idSiege" = "societe"."idSiegeSocial"
+        	JOIN "adresse" a ON a."idAdresse" = ss."idSiege"
 		WHERE "societe"."NIF" IS NOT NULL
 			AND "societe"."RCS" IS NOT NULL
 			AND "societe"."STAT" IS NOT NULL
 			AND "associe"."partCapitalAssocie" != 0
 			AND "societe"."dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+            AND a."idDistrict"=ANY(:idsDistrict::int[])
 		ORDER BY "societe"."denominationSocial" ASC;
   	</sql>
   	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
   	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<param type="IN" name="idsDistrict" sqlType="STRING" paramType="ARRAY" optional="false" />
   	<result outputType="json">
   	{
     	"data":{
@@ -1805,10 +1862,12 @@
 			AND "STAT" IS NOT NULL
 			AND "RCS" IS NOT NULL
 			AND "societe"."dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+            AND "idDistrict"=ANY(:idsDistrict::int[])
 		ORDER BY "denominationSocial" ASC;
   	</sql>
   	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
   	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<param type="IN" name="idsDistrict" sqlType="STRING" paramType="ARRAY" optional="false" />
   	<result outputType="json">
   		{
   			data:{
@@ -1870,10 +1929,12 @@
 			AND "STAT" IS NOT NULL
 			AND "RCS" IS NOT NULL
 			AND "societe"."dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+            AND "idDistrict"=ANY(:idsDistrict::int[])
 		ORDER BY "denominationSocial" ASC
   	</sql>
   	<param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="false" />
   	<param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="false" />
+  	<param type="IN" name="idsDistrict" sqlType="STRING" paramType="ARRAY" optional="false" />
   	<result outputType="json">
   		{
   			data:{
