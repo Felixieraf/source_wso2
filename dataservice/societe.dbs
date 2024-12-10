@@ -1274,7 +1274,7 @@
 		JOIN "associe" s ON s."idAssocie" = "societeAssocie"."idAssocie"
   		JOIN personne."personne" p ON s."idPersonne"= p."idPersonne"
         JOIN "siegeSocial" ss ON ss."idSiege" = "societe"."idSiegeSocial"
-        JOIN "adresse" a ON a."idAdresse" = ss."idSiege"
+        JOIN "adresse" a ON a."idAdresse" = ss."adresseSiegeSocial"
   		WHERE "NIF" IS NOT NULL
 			AND "RCS" IS NOT NULL
 			AND "STAT" IS NOT NULL
@@ -1307,7 +1307,7 @@
 		    JOIN "associe" s_inner ON s_inner."idAssocie" = sa_inner."idAssocie"
 		    JOIN "societe" so_inner ON sa_inner."idSociete" = so_inner."idSociete"
 		    JOIN "siegeSocial" ss ON ss."idSiege" = so_inner."idSiegeSocial"
-        	JOIN "adresse" a ON a."idAdresse" = ss."idSiege"
+        	JOIN "adresse" a ON a."idAdresse" = ss."adresseSiegeSocial"
 		    WHERE so_inner."NIF" IS NOT NULL
 		      AND so_inner."RCS" IS NOT NULL
 		      AND so_inner."STAT" IS NOT NULL
@@ -1358,7 +1358,7 @@
   		JOIN personne."personne" p ON s."idPersonne"= p."idPersonne"
 		LEFT JOIN personne."nationalite" n ON n."code"=p."nationalite"
   		JOIN "siegeSocial" ss ON ss."idSiege" = "societe"."idSiegeSocial"
-        JOIN "adresse" a ON a."idAdresse" = ss."idSiege"
+        JOIN "adresse" a ON a."idAdresse" = ss."adresseSiegeSocial"
   		WHERE "NIF" IS NOT NULL
 			AND "RCS" IS NOT NULL
 			AND "STAT" IS NOT NULL
@@ -1391,7 +1391,7 @@
 		    JOIN "associe" s_inner ON s_inner."idAssocie" = sa_inner."idAssocie"
 		    JOIN "societe" so_inner ON sa_inner."idSociete" = so_inner."idSociete"
   			JOIN "siegeSocial" ss ON ss."idSiege" = so_inner."idSiegeSocial"
-        	JOIN "adresse" a ON a."idAdresse" = ss."idSiege"
+        	JOIN "adresse" a ON a."idAdresse" = ss."adresseSiegeSocial"
 		    WHERE so_inner."NIF" IS NOT NULL
 		      AND so_inner."RCS" IS NOT NULL
 		      AND so_inner."STAT" IS NOT NULL
@@ -1437,7 +1437,7 @@
 		FROM
     		societe s
   			JOIN "siegeSocial" ss ON ss."idSiege" = s."idSiegeSocial"
-        	JOIN "adresse" a ON a."idAdresse" = ss."idSiege"
+        	JOIN "adresse" a ON a."idAdresse" = ss."adresseSiegeSocial"
 		WHERE
     		"dateNIF" IS NOT NULL
    			 AND "dateNIF" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
@@ -1481,7 +1481,7 @@
 		    COUNT("idSociete") AS number
 		FROM "societe" s
   			JOIN "siegeSocial" ss ON ss."idSiege" = s."idSiegeSocial"
-        	JOIN "adresse" a ON a."idAdresse" = ss."idSiege"
+        	JOIN "adresse" a ON a."idAdresse" = ss."adresseSiegeSocial"
 		WHERE (
 		    "NIF" IS NOT NULL
 		    AND "STAT" IS NOT NULL
@@ -1530,7 +1530,7 @@
 		    COUNT("idSociete") OVER (PARTITION BY ca."descriptivesCategorie_fr", TO_CHAR("dateNIF", 'Mon YYYY')) AS number
 		FROM "societe" s
   			JOIN "siegeSocial" ss ON ss."idSiege" = s."idSiegeSocial"
-        	JOIN "adresse" a ON a."idAdresse" = ss."idSiege"
+        	JOIN "adresse" a ON a."idAdresse" = ss."adresseSiegeSocial"
 			JOIN siteWebInformation."categorieActivite" ca ON ca."id" = SUBSTRING(CAST("STAT" AS TEXT) FROM 1 FOR 5)
 		WHERE (
 			"NIF" IS NOT NULL
@@ -1578,7 +1578,7 @@
 		    FROM public.societe
 		    JOIN dossier_somission."historiquePaiement" h ON h."idDossier" = societe."idDossier"
   			JOIN "siegeSocial" ss ON ss."idSiege" = societe."idSiegeSocial"
-        	JOIN "adresse" a ON a."idAdresse" = ss."idSiege"
+        	JOIN "adresse" a ON a."idAdresse" = ss."adresseSiegeSocial"
 		    WHERE "NIF" IS NOT NULL
 		      AND "RCS" IS NOT NULL
 		      AND "STAT" IS NOT NULL
@@ -1628,7 +1628,7 @@
 		    FROM public.societe
 		    JOIN dossier_somission."historiquePaiement" h ON h."idDossier" = societe."idDossier"
   			JOIN "siegeSocial" ss ON ss."idSiege" = societe."idSiegeSocial"
-        	JOIN "adresse" a ON a."idAdresse" = ss."idSiege"
+        	JOIN "adresse" a ON a."idAdresse" = ss."adresseSiegeSocial"
 		    WHERE "NIF" IS NOT NULL
 		      	AND "RCS" IS NOT NULL
 		      	AND "STAT" IS NOT NULL
@@ -1693,7 +1693,7 @@
 			JOIN personne."nationalite" ON personne."nationalite"."code" = personne."personne"."nationalite"
 			JOIN personne."role" ON personne."role"."id_role" = ANY("associe"."idStatutSociete")
 			JOIN "siegeSocial" ss ON ss."idSiege" = "societe"."idSiegeSocial"
-        	JOIN "adresse" a ON a."idAdresse" = ss."idSiege"
+        	JOIN "adresse" a ON a."idAdresse" = ss."adresseSiegeSocial"
 		WHERE "NIF" IS NOT NULL
 			AND "RCS" IS NOT NULL
 			AND "STAT" IS NOT NULL
@@ -1773,7 +1773,7 @@
 			JOIN personne."adresse" ON personne."adresse"."idAdresse" = personne."personneMorale"."idAdresse"
 			JOIN personne."nationalite" ON personne."nationalite"."code" = personne."adresse"."codePays"
 			JOIN "siegeSocial" ss ON ss."idSiege" = "societe"."idSiegeSocial"
-        	JOIN "adresse" a ON a."idAdresse" = ss."idSiege"
+        	JOIN "adresse" a ON a."idAdresse" = ss."adresseSiegeSocial"
 		WHERE "societe"."NIF" IS NOT NULL
 			AND "societe"."RCS" IS NOT NULL
 			AND "societe"."STAT" IS NOT NULL
