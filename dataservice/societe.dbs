@@ -392,9 +392,18 @@
     <description />
     <call-query href="getCreatedCompanyId" />
   </resource>
-  <resource path="getUnsentCompanies" method="GET">
+  <resource path="getUnsentCompanies" method="POST">
   	<description />
-  	<call-query href="getUnsentCompanies" />
+  	<call-query href="getUnsentCompanies">
+        <with-param name="limit" query-param="limit" />
+        <with-param name="offset" query-param="offset" />
+        <with-param name="denominationSocial" query-param="denominationSocial" />
+        <with-param name="NIF" query-param="nif" />
+        <with-param name="STAT" query-param="stat" />
+        <with-param name="RCS" query-param="rcs" />
+        <with-param name="startDate" query-param="startDate" />
+        <with-param name="endDate" query-param="endDate" />
+    </call-query>
   </resource>
    <resource method="GET" path="getPersonAssociateDirigeant">
     <description />
@@ -1224,21 +1233,47 @@
   </query>
   <query id="getUnsentCompanies" useConfig="societeDS">
     <sql>
-    	SELECT status."idSociete", status."EDBM", societe."denominationSocial",
-  		to_char(societe."dateCreation", 'YYYY-MM-DD') AS "dateCreation",
-  		societe."dateNIF",
-		CONCAT(adresse.adresse , ' ' , fokontany."name", ' ', common."name") AS "siegeSocial",
-    	societe."capital", societe."idFormeJuridique",
-		societe."duree", societe."objetSocial", societe."STAT",
-		societe."NIF", societe."RCS"
+    	SELECT 
+	    	status."idSociete", 
+	    	status."EDBM", 
+	    	societe."denominationSocial",
+	  		to_char(societe."dateCreation", 'YYYY-MM-DD') AS "dateCreation",
+	  		societe."dateNIF",
+			CONCAT(adresse.adresse , ' ' , fokontany."name", ' ', common."name") AS "siegeSocial",
+	    	to_char(societe."capital",  'FM999 999 999 990.00') AS capital,
+	    	societe."idFormeJuridique",
+			societe."duree", 
+			societe."objetSocial", 
+			societe."STAT",
+			societe."NIF", 
+			societe."RCS"
     	FROM public."statutInteroperabilite" status
     	JOIN public.societe ON societe."idSociete" = status."idSociete"
     	JOIN public."siegeSocial" ON "siegeSocial"."idSiege" = societe."idSiegeSocial"
     	JOIN public.adresse ON adresse."idAdresse" = "siegeSocial"."adresseSiegeSocial"
-		JOIN localisation."fokontany" ON fokontany.id = adresse."idFokontany"
+    	JOIN localisation."fokontany" ON fokontany.id = adresse."idFokontany"
 		JOIN localisation."common" ON common.id = adresse."idCommune"
-		WHERE status."RCS" > 1 AND status."INSTAT" > 1 AND status."DGI" > 1 AND ("SITE"=0 OR "SITE" IS NULL) AND societe."NIF" IS NOT NULL
+		WHERE status."RCS" > 1 
+			AND status."INSTAT" > 1 
+			AND status."DGI" > 1 
+			AND ("SITE"=0 OR "SITE" IS NULL) 
+			AND societe."NIF" IS NOT NULL
+			AND (:denominationSocial IS NULL OR TRIM(societe."denominationSocial") ILIKE CONCAT('%',TRIM(:denominationSocial),'%'))
+			AND (:NIF IS NULL OR societe."NIF" ILIKE CONCAT('%',:NIF,'%'))
+			AND (:STAT IS NULL OR societe."STAT" ILIKE CONCAT('%',:STAT,'%'))
+			AND (:RCS IS NULL OR societe."RCS" ILIKE CONCAT('%',:RCS,'%'))
+			AND "dateCreation" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
+		ORDER BY societe."dateCreation" DESC
+		LIMIT :limit OFFSET :offset
     </sql>
+    <param type="IN" name="limit" sqlType="INTEGER" paramType="SCALAR"/>
+    <param type="IN" name="offset" sqlType="INTEGER" paramType="SCALAR"/>
+    <param type="IN" name="denominationSocial" sqlType="STRING" paramType="SCALAR" optional="true"/>
+    <param type="IN" name="NIF" sqlType="STRING" paramType="SCALAR" optional="true"/>
+    <param type="IN" name="STAT" sqlType="STRING" paramType="SCALAR" optional="true"/>
+    <param type="IN" name="RCS" sqlType="STRING" paramType="SCALAR" optional="true"/>
+    <param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="true"/>
+    <param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="true"/>
     <result outputType="json">
     {
     	"data":{
