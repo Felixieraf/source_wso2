@@ -398,12 +398,16 @@
         <with-param name="limit" query-param="limit" />
         <with-param name="offset" query-param="offset" />
         <with-param name="denominationSocial" query-param="denominationSocial" />
-        <with-param name="NIF" query-param="nif" />
-        <with-param name="STAT" query-param="stat" />
-        <with-param name="RCS" query-param="rcs" />
+        <with-param name="nif" query-param="nif" />
+        <with-param name="stat" query-param="stat" />
+        <with-param name="rcs" query-param="rcs" />
         <with-param name="startDate" query-param="startDate" />
         <with-param name="endDate" query-param="endDate" />
     </call-query>
+  </resource>
+  <resource path="countCompaniesCreated" method="GET">
+    <description />
+    <call-query href="countCompaniesCreated" />
   </resource>
    <resource method="GET" path="getPersonAssociateDirigeant">
     <description />
@@ -1258,20 +1262,15 @@
 			AND status."DGI" > 1 
 			AND ("SITE"=0 OR "SITE" IS NULL) 
 			AND societe."NIF" IS NOT NULL
-			AND (:denominationSocial IS NULL OR TRIM(societe."denominationSocial") ILIKE CONCAT('%',TRIM(:denominationSocial),'%'))
-			AND (:NIF IS NULL OR societe."NIF" ILIKE CONCAT('%',:NIF,'%'))
-			AND (:STAT IS NULL OR societe."STAT" ILIKE CONCAT('%',:STAT,'%'))
-			AND (:RCS IS NULL OR societe."RCS" ILIKE CONCAT('%',:RCS,'%'))
-			AND "dateCreation" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
 		ORDER BY societe."dateCreation" DESC
 		LIMIT :limit OFFSET :offset
     </sql>
     <param type="IN" name="limit" sqlType="INTEGER" paramType="SCALAR"/>
     <param type="IN" name="offset" sqlType="INTEGER" paramType="SCALAR"/>
     <param type="IN" name="denominationSocial" sqlType="STRING" paramType="SCALAR" optional="true"/>
-    <param type="IN" name="NIF" sqlType="STRING" paramType="SCALAR" optional="true"/>
-    <param type="IN" name="STAT" sqlType="STRING" paramType="SCALAR" optional="true"/>
-    <param type="IN" name="RCS" sqlType="STRING" paramType="SCALAR" optional="true"/>
+    <param type="IN" name="nif" sqlType="STRING" paramType="SCALAR" optional="true"/>
+    <param type="IN" name="stat" sqlType="STRING" paramType="SCALAR" optional="true"/>
+    <param type="IN" name="rcs" sqlType="STRING" paramType="SCALAR" optional="true"/>
     <param type="IN" name="startDate" sqlType="STRING" paramType="SCALAR" optional="true"/>
     <param type="IN" name="endDate" sqlType="STRING" paramType="SCALAR" optional="true"/>
     <result outputType="json">
@@ -1291,6 +1290,26 @@
 	    		"stat":"$STAT",
 	    		"nif":"$NIF"
 	    	}]
+	    }
+	}
+    </result>
+  </query>
+  
+  <query id="countCompaniesCreated" useConfig="societeDS">
+    <sql>
+    	SELECT COUNT(*) AS total
+    	FROM public."statutInteroperabilite" status
+    	JOIN public.societe ON societe."idSociete" = status."idSociete"
+		WHERE status."RCS" > 1 
+			AND status."INSTAT" > 1 
+			AND status."DGI" > 1 
+			AND ("SITE"=0 OR "SITE" IS NULL) 
+			AND societe."NIF" IS NOT NULL
+    </sql>
+    <result outputType="json">
+    {
+    	"count":{
+    		"count":"$total"
 	    }
 	}
     </result>
