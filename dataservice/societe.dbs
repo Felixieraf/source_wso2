@@ -1262,6 +1262,7 @@
 			AND status."DGI" > 1 
 			AND ("SITE"=0 OR "SITE" IS NULL) 
 			AND societe."NIF" IS NOT NULL
+			AND "dateCreation" BETWEEN TO_DATE(:startDate, 'YYYY-MM-DD') AND TO_DATE(:endDate, 'YYYY-MM-DD')
 		ORDER BY societe."dateCreation" DESC
 		LIMIT :limit OFFSET :offset
     </sql>
