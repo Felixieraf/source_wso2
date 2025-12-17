@@ -420,7 +420,7 @@ SELECT COUNT("idDossier") as nombre  FROM public.dossier WHERE "idStatutDossier"
     <param type="IN" name="idDossier" paramType="SCALAR" sqlType="INTEGER" />
   </query>
   <query id="updateSubmitDate" useConfig="dossierSomissionDS">
-    <sql>UPDATE public.dossier SET "dateSoumission" = CURRENT_TIMESTAMP WHERE "idDossier" = :idDossier</sql>
+    <sql>UPDATE public.dossier SET "dateSoumission" = CURRENT_TIMESTAMP, "idStatutDossier" = 1 WHERE "idDossier" = :idDossier</sql>
     <param type="IN" name="idDossier" paramType="SCALAR" sqlType="INTEGER" />
   </query>
   <query id="saveBillStory" useConfig="dossierSomissionDS">
@@ -1591,11 +1591,62 @@ FROM   T where "idStatut"=4 or "idStatut"=3 ;
         <param type="IN" name="ids" paramType="ARRAY" sqlType="INTEGER" />
         <param type="IN" name="status" paramType="ARRAY" sqlType="INTEGER" />
         <result outputType="json">
-            {"counter": {
-	    		"count": $count
-	    	}}
+            {
+            	"counter": {
+	    			"count": "$count"
+	    		}
+	    	}
         </result>
     </query>
+    
+    <resource path="folders/list/count/nouveau" method="POST">
+        <description />
+        <call-query href="fetchFolderInListCounterNouveau">	
+            <with-param name="ids" query-param="ids" />
+        	<with-param name="status" query-param="status" />
+        </call-query>
+    </resource>
+    <query id="fetchFolderInListCounterNouveau" useConfig="dossierSomissionDS">
+        <sql>
+            SELECT COUNT(dossier.*) as count FROM dossier 
+            WHERE "idDossier" IN (:ids) AND "idStatutDossier" IN (:status)
+            AND "dateSoumission" is NULL
+        </sql>
+        <param type="IN" name="ids" paramType="ARRAY" sqlType="INTEGER" />
+        <param type="IN" name="status" paramType="ARRAY" sqlType="INTEGER" />
+        <result outputType="json">
+            {
+		        "counter": {
+		            "count": "$count"
+		        }
+		    }
+        </result>
+    </query>
+    
+    <resource path="folders/list/count/submit" method="POST">
+        <description />
+        <call-query href="fetchFolderInListCounterSubmit">		
+            <with-param name="ids" query-param="ids" />
+        	<with-param name="status" query-param="status" />
+        </call-query>
+    </resource>
+    <query id="fetchFolderInListCounterSubmit" useConfig="dossierSomissionDS">
+        <sql>
+            SELECT COUNT(dossier.*) as count FROM dossier 
+            WHERE "idDossier" IN (:ids) AND "idStatutDossier" IN (:status)
+            AND "dateSoumission" is NOT NULL
+        </sql>
+        <param type="IN" name="ids" paramType="ARRAY" sqlType="INTEGER" />
+        <param type="IN" name="status" paramType="ARRAY" sqlType="INTEGER" />
+        <result outputType="json">
+            {
+		        "counter": {
+		            "count": "$count"
+		        }
+		    }
+        </result>
+    </query>
+    
     
     <resource path="folders" method="POST">
         <description />
@@ -1720,6 +1771,46 @@ FROM   T where "idStatut"=4 or "idStatut"=3 ;
         <sql>
             SELECT COUNT(dossier.*) as count FROM dossier 
             WHERE "idStatutDossier" IN (:status)
+        </sql>
+        <param type="IN" name="status" paramType="ARRAY" sqlType="INTEGER" />
+        <result outputType="json">
+            {"counter": {
+	    		"count": $count
+	    	}}
+        </result>
+    </query>
+    
+    <resource path="folders/count/nouveau" method="POST">
+        <description />
+        <call-query href="fetchFolderCounterNouveau">	
+        	<with-param name="status" query-param="status" />
+        </call-query>
+    </resource>
+    <query id="fetchFolderCounterNouveau" useConfig="dossierSomissionDS">
+        <sql>
+            SELECT COUNT(dossier.*) as count FROM dossier 
+            WHERE "idStatutDossier" IN (:status) 
+            AND "dateSoumission" is NULL
+        </sql>
+        <param type="IN" name="status" paramType="ARRAY" sqlType="INTEGER" />
+        <result outputType="json">
+            {"counter": {
+	    		"count": $count
+	    	}}
+        </result>
+    </query>
+    
+    <resource path="folders/count/submit" method="POST">
+        <description />
+        <call-query href="fetchFolderCounterSubmit">	
+        	<with-param name="status" query-param="status" />
+        </call-query>
+    </resource>
+    <query id="fetchFolderCounterSubmit" useConfig="dossierSomissionDS">
+        <sql>
+            SELECT COUNT(dossier.*) as count FROM dossier 
+            WHERE "idStatutDossier" IN (:status) 
+            AND "dateSoumission" is NOT NULL
         </sql>
         <param type="IN" name="status" paramType="ARRAY" sqlType="INTEGER" />
         <result outputType="json">

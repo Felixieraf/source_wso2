@@ -259,6 +259,13 @@
       <with-param name="idPersonne" query-param="idPersonne" />
     </call-query>
   </resource>
+  <resource path="checkCompanyByDenominationAndPersonId" method="GET">
+    <description />
+    <call-query href="checkCompanyByDenominationAndPersonId">
+      <with-param name="denominationSocial" query-param="denominationSocial" />
+      <with-param name="idPerson" query-param="idPerson" />
+    </call-query>
+  </resource>
   <resource path="deleteCompany" method="DELETE">
     <description />
     <call-query href="deleteCompany">
@@ -1034,6 +1041,23 @@
     <param type="IN" name="idPersonne" sqlType="INTEGER" paramType="SCALAR" optional="false" />
     <result outputType="json">{"societies":{"society":[{"idSociete":"$idSociete", "denominationSocial":"$denominationSocial","idDossier":"$idDossier"}]}}</result>
   </query>
+  
+  <query id="checkCompanyByDenominationAndPersonId" useConfig="societeDS">
+    <sql>
+    	SELECT 
+    		CASE 
+    			WHEN COUNT(*) > 0 THEN 'true' 
+    			ELSE 'false' 
+    		END AS exists	
+    	FROM public.societe 
+    	WHERE "idPersonne"=:idPerson 
+    	AND LOWER("denominationSocial") = LOWER(:denominationSocial)
+    </sql>
+    <param type="IN" name="denominationSocial" sqlType="STRING" paramType="SCALAR" optional="false" />
+    <param type="IN" name="idPerson" sqlType="INTEGER" paramType="SCALAR" optional="false" />
+    <result outputType="json">{"data":{"exists":$exists}}</result>
+  </query>
+  
   <query id="deleteCompany" useConfig="societeDS">
     <sql>Delete 	FROM public.societe WHERE "idSociete"=:idSociete</sql>
     <param type="IN" name="idSociete" sqlType="INTEGER" paramType="SCALAR" optional="false" />
