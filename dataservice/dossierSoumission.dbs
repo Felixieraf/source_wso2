@@ -231,7 +231,7 @@ SELECT COUNT("idDossier") as nombre  FROM public.dossier WHERE "idStatutDossier"
   </resource>
   <query id="getListRdvByType" useConfig="dossierSomissionDS">
     <sql>SELECT *
-	FROM public."rendezVous" WHERE "idDossier"=:idDossier AND "idTypeRendezVous"=:idTypeRendezVous ORDER BY "dateRendezVous" DESC, "heureRdv" DESC</sql>
+	FROM public."rendezVous" WHERE "idDossier"=:idDossier AND "idTypeRendezVous"=:idTypeRendezVous ORDER BY "dateCreation" DESC</sql>
     <param type="IN" name="idDossier" paramType="SCALAR" sqlType="INTEGER" />
     <param type="IN" name="idTypeRendezVous" paramType="SCALAR" sqlType="INTEGER" />
     <result outputType="json">
