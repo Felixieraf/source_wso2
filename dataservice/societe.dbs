@@ -8,19 +8,19 @@
     <property name="password">devedbmdb</property>
   </config> -->
   <!-- CONFIGURATION TEST -->
-  <!-- <config id="societeDS">
+  <config id="societeDS">
     <property name="driverClassName">org.postgresql.Driver</property>
     <property name="url">jdbc:postgresql://13.246.0.44:5432/societe</property>
     <property name="username">devedbmdb</property>
     <property name="password">devedbmdb</property>
-  </config> -->
+  </config>
   <!-- CONFIGURATION DEV -->
-  <config id="societeDS"> 
+  <!-- <config id="societeDS"> 
     <property name="driverClassName">org.postgresql.Driver</property>
     <property name="url">jdbc:postgresql://localhost:5432/societe</property>
     <property name="username">postgres</property>
     <property name="password">postgres</property>
-  </config>
+  </config> -->
 
   <resource path="addSocietyForm" method="POST">
     <description>add society from online form</description>
@@ -1918,7 +1918,7 @@
 			TO_CHAR("dateNIF" :: DATE, 'dd/mm/yyyy') AS "dateNIF",
 			"STAT" AS "stat",
 			TO_CHAR("dateSTAT" :: DATE, 'dd/mm/yyyy') AS "dateSTAT",
-			TO_CHAR(capital, 'FM999 999 999 999') AS "capital",
+			TO_CHAR(capital, 'FM999999999999') AS "capital",
 			'' AS "nbemployes",
 			"region"."name" AS "region",
 			"district"."name" AS "district",
@@ -2564,6 +2564,61 @@
   <query id="filterCompanyByName" useConfig="societeDS">
     <sql>SELECT * FROM societe WHERE LOWER(TRIM("denominationSocial")) LIKE CONCAT('%',:name, '%') </sql>
     <param type="IN" name="name" paramType="SCALAR" sqlType="STRING"/>
+    <result outputType="json">
+    	{
+    		"data": {
+    			"companies": [{
+	    			"idSociete":$idSociete,
+			        "formeJuridique": "$formeJuridique",
+			        "idFormeJuridique": "$idFormeJuridique",
+			        "denominationSocial": "$denominationSocial",
+			        "nomCommercial": "$nomCommercial",
+			        "sigle": "$sigle",
+			        "objetSocial": "$objetSocial",
+			        "idSecteurActivite": "$idSecteurActivite",
+			        "activitePrincipal": "$activitePrincipal",
+			        "activiteImportExport": "$activiteImportExport",
+			        "activiteIndustrielCollecteur": "$activiteIndustrielCollecteur",
+			        "activiteGrossiste": "$activiteGrossiste",
+			        "capital":"$capital",
+			        "montantPartSocial": "$montantPartSocial",
+			        "dateStatut": "$dateStatut",
+			        "choixImposition": "$choixImposition",
+			        "tva":"$tva",
+			        "duree":"$duree",
+			        "finExerciceSocial": "$finExerciceSocial",
+			        "idPersonne": "$idPersonne",
+			        "idDossier": "$idDossier",
+			        "idSiegeSocial": "$idSiegeSocial",
+			        "idDevise": "$idDevise",
+			        "idDevisePartAssocie": "$idDevisePartAssocie",
+			        "NIF":"$NIF",
+			        "dateNIF":"$dateNIF",
+			        "STAT":"$STAT",
+			        "RCS":"$RCS",
+			        "dateSTAT":"$dateSTAT",
+			        "dateRCS":"$dateRCS",
+			        "ubi":"$ubi",
+			        "activiteSecondaire": "$activiteSecondaire"
+	    		}]
+    		}
+    	}
+    </result>
+  </query>
+  
+  <resource path="agent/filter/by/nif" method="POST">
+    <description />
+    <call-query href="filterCompanyByNif">
+      <with-param name="value" query-param="value" />
+    </call-query>
+  </resource>
+  <query id="filterCompanyByNif" useConfig="societeDS">
+    <sql>SELECT * FROM societe 
+    		WHERE LOWER(TRIM("NIF")) LIKE CONCAT('%',:value, '%') 
+    		OR LOWER(TRIM("STAT")) LIKE CONCAT('%',:value, '%') 
+    		OR TRIM("RCS") LIKE CONCAT('%',:value, '%') 
+    </sql>
+    <param type="IN" name="value" paramType="SCALAR" sqlType="STRING"/>
     <result outputType="json">
     	{
     		"data": {

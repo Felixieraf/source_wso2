@@ -1469,11 +1469,23 @@ FROM   T where "idStatut"=4 or "idStatut"=3 ;
     <query id="fetchFolderInListAsc" useConfig="dossierSomissionDS">
         <sql>
         	SELECT dossier.*, de.id AS stateId, de.person_uuid AS statePersonUid, de.group AS stateGroup, de."createdAt" AS stateCreatedAt
+        	
             FROM dossier 
             LEFT JOIN public.dossier_etat de ON dossier."idDossier" = de."idDossier" AND de.group = :group
+            LEFT JOIN (
+			    SELECT 
+			        "idDossier",
+			        MAX("dateModification") AS last_update_date
+			    FROM historiqueStatutDossier
+			    WHERE "idStatut" = 2
+			    GROUP BY "idDossier"
+			) hs 
+			ON dossier."idDossier" = hs."idDossier"
+			
             WHERE dossier."idDossier" IN (:ids) AND "idStatutDossier" IN (:status)
             ORDER BY 
             	CASE WHEN "idStatutDossier" = 4 THEN "dateSoumission" END DESC NULLS LAST,
+            	CASE WHEN "idStatutDossier" = 2 THEN "hs.last_update_date" END ASC NULLS LAST,
 				CASE WHEN "idStatutDossier" != 4 THEN "dateSoumission" END ASC,
     			"numeroDossier" ASC NULLS LAST LIMIT :limit OFFSET :offset
         </sql>
